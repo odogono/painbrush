@@ -7,10 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2706B85510ED712200080D4A /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2706B83E10ED709200080D4A /* SenTestingKit.framework */; };
+		5E5974913AAB38B4C492E4A4 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9B20F4903526FC08A9AD2E2 /* XCTest.framework */; };
 		2706B88010ED719500080D4A /* PaintViewDrawingTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B81010ED6FE400080D4A /* PaintViewDrawingTest.m */; };
 		2706B94D10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		2706B94E10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
+		298DD4C7B3E9F87BC9342A98 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 273E0B6D0E32FC2200D11815 /* QuartzCore.framework */; };
+		AFFB5C3C4AECD04504765B97 /* SWImageTools.m in Sources */ = {isa = PBXBuildFile; fileRef = 273E0B390E32F99D00D11815 /* SWImageTools.m */; };
+		FD1FF1D897655405E236225B /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 594D309E0DFF939E0095E075 /* Cocoa.framework */; };
 		270F02740BD0218F005B92A3 /* SWTextToolWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = 270F02720BD0218F005B92A3 /* SWTextToolWindowController.m */; };
 		271EEB0E0BBC34A800319865 /* SWSelectionTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 271EEB0C0BBC34A800319865 /* SWSelectionTool.m */; };
 		271EEB1E0BBC352300319865 /* SWTextTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 271EEB1C0BBC352300319865 /* SWTextTool.m */; };
@@ -247,9 +250,9 @@
 		2704064A0BFE3F3600C308C8 /* ToDo.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = "Paintbrush/Resources/Documents/ToDo.rtf"; sourceTree = "<group>"; };
 		2706B80F10ED6FE400080D4A /* PaintViewDrawingTest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "PaintbrushTests/Sources/PaintViewDrawingTest.h"; sourceTree = "<group>"; };
 		2706B81010ED6FE400080D4A /* PaintViewDrawingTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "PaintbrushTests/Sources/PaintViewDrawingTest.m"; sourceTree = "<group>"; };
-		2706B83910ED702F00080D4A /* Test.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Test.octest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2706B83910ED702F00080D4A /* Test.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Test.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2706B83A10ED702F00080D4A /* Test-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PaintbrushTests/Supporting Files/Test-Info.plist"; sourceTree = "<group>"; };
-		2706B83E10ED709200080D4A /* SenTestingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SenTestingKit.framework; path = Library/Frameworks/SenTestingKit.framework; sourceTree = DEVELOPER_DIR; };
+		E9B20F4903526FC08A9AD2E2 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		2706B94B10ED77A600080D4A /* DebugLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Paintbrush/Sources/Support/DebugLog.h"; sourceTree = "<group>"; };
 		2706B94C10ED77A600080D4A /* DebugLog.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Paintbrush/Sources/Support/DebugLog.m"; sourceTree = "<group>"; };
 		270F02710BD0218F005B92A3 /* SWTextToolWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Paintbrush/Sources/Controllers/SWTextToolWindowController.h"; sourceTree = "<group>"; };
@@ -415,7 +418,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2706B85510ED712200080D4A /* SenTestingKit.framework in Frameworks */,
+				FD1FF1D897655405E236225B /* Cocoa.framework in Frameworks */,
+				298DD4C7B3E9F87BC9342A98 /* QuartzCore.framework in Frameworks */,
+				5E5974913AAB38B4C492E4A4 /* XCTest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -458,7 +463,7 @@
 			isa = PBXGroup;
 			children = (
 				8D15AC370486D014006FF6A4 /* Paintbrush.app */,
-				2706B83910ED702F00080D4A /* Test.octest */,
+				2706B83910ED702F00080D4A /* Test.xctest */,
 				27A2E0CD16AB70B400F124D1 /* Paintbrush.app */,
 			);
 			name = Products;
@@ -778,7 +783,7 @@
 			children = (
 				27A1CFC61226E8E000822B7D /* Sparkle.framework */,
 				594D309E0DFF939E0095E075 /* Cocoa.framework */,
-				2706B83E10ED709200080D4A /* SenTestingKit.framework */,
+				E9B20F4903526FC08A9AD2E2 /* XCTest.framework */,
 				277FCC94123DB74A00249A3F /* Security.framework */,
 			);
 			name = "Linked Frameworks";
@@ -794,7 +799,6 @@
 				2706B83410ED702F00080D4A /* Resources */,
 				2706B83510ED702F00080D4A /* Sources */,
 				2706B83610ED702F00080D4A /* Frameworks */,
-				2706B83710ED702F00080D4A /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -802,8 +806,8 @@
 			);
 			name = Test;
 			productName = Test;
-			productReference = 2706B83910ED702F00080D4A /* Test.octest */;
-			productType = "com.apple.product-type.bundle";
+			productReference = 2706B83910ED702F00080D4A /* Test.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		27A2E05916AB70B400F124D1 /* Paintbrush-AppStore */ = {
 			isa = PBXNativeTarget;
@@ -1016,22 +1020,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		2706B83710ED702F00080D4A /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Run the unit tests in this test bundle.\n\"${SYSTEM_DEVELOPER_DIR}/Tools/RunUnitTests\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		2706B83510ED702F00080D4A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -1039,7 +1027,7 @@
 			files = (
 				2706B88010ED719500080D4A /* PaintViewDrawingTest.m in Sources */,
 				2706B94D10ED77A600080D4A /* DebugLog.m in Sources */,
-				2723FB601162830F005BCB1B /* SWImageDataSource.m in Sources */,
+				AFFB5C3C4AECD04504765B97 /* SWImageTools.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1238,27 +1226,30 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ARCHS = "$(ARCHS_STANDARD)";
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2.2.1;
 				FRAMEWORK_SEARCH_PATHS = "$(DEVELOPER_LIBRARY_DIR)/Frameworks";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/Cocoa.framework/Headers/Cocoa.h";
+				GCC_PREFIX_HEADER = "Paintbrush/Supporting Files/Paintbrush_Prefix.pch";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Paintbrush/Sources/**";
 				INFOPLIST_FILE = "PaintbrushTests/Supporting Files/Test-Info.plist";
 				INSTALL_PATH = "$(USER_LIBRARY_DIR)/Bundles";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Cocoa,
-					"-framework",
-					SenTestingKit,
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@loader_path/../Frameworks",
+					"@executable_path/../Frameworks",
 				);
-				PREBINDING = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.PaintbrushTests;
 				PRODUCT_NAME = Test;
-				WRAPPER_EXTENSION = octest;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
 		};
@@ -1266,51 +1257,68 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
 				COPY_PHASE_STRIP = YES;
+				CURRENT_PROJECT_VERSION = 2.2.1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				FRAMEWORK_SEARCH_PATHS = "$(DEVELOPER_LIBRARY_DIR)/Frameworks";
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/Cocoa.framework/Headers/Cocoa.h";
+				GCC_PREFIX_HEADER = "Paintbrush/Supporting Files/Paintbrush_Prefix.pch";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Paintbrush/Sources/**";
 				INFOPLIST_FILE = "PaintbrushTests/Supporting Files/Test-Info.plist";
 				INSTALL_PATH = "$(USER_LIBRARY_DIR)/Bundles";
-				OTHER_LDFLAGS = (
-					"-framework",
-					Cocoa,
-					"-framework",
-					SenTestingKit,
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@loader_path/../Frameworks",
+					"@executable_path/../Frameworks",
 				);
-				PREBINDING = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.PaintbrushTests;
 				PRODUCT_NAME = Test;
-				WRAPPER_EXTENSION = octest;
-				ZERO_LINK = NO;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				WRAPPER_EXTENSION = xctest;
 			};
 			name = Release;
 		};
 		27A2E0CB16AB70B400F124D1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.2.0;
+				CURRENT_PROJECT_VERSION = 2.2.1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)\"",
+					"\"$(DEVELOPER_FRAMEWORKS_DIR)\"",
+					"\"$(SRCROOT)/Frameworks\"",
+				);
 				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_ENABLE_OBJC_GC = unsupported;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_MODEL_TUNING = G4;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREFIX_HEADER = "Paintbrush/Supporting Files/Paintbrush_Prefix.pch";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Paintbrush/Sources/**";
 				INFOPLIST_FILE = "Paintbrush/Supporting Files/Info-AppStore.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DDEBUG",
 					"-DAPPSTORE",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
 				PRODUCT_NAME = Paintbrush;
-				SDKROOT = macosx10.6;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				WRAPPER_EXTENSION = app;
@@ -1321,18 +1329,15 @@
 		27A2E0CC16AB70B400F124D1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				CURRENT_PROJECT_VERSION = 2.2.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
+				CURRENT_PROJECT_VERSION = 2.2.1;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_2)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_3)",
-					"\\\"$(SRCROOT)\\\"",
-					"\\\"$(DEVELOPER_FRAMEWORKS_DIR)\\\"",
-					"\\\"$(SRCROOT)/Frameworks\\\"",
+					"\"$(SRCROOT)\"",
+					"\"$(DEVELOPER_FRAMEWORKS_DIR)\"",
+					"\"$(SRCROOT)/Frameworks\"",
 				);
-				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)\"";
 				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_AUTO_VECTORIZATION = YES;
 				GCC_ENABLE_OBJC_GC = unsupported;
@@ -1342,11 +1347,16 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREFIX_HEADER = "Paintbrush/Supporting Files/Paintbrush_Prefix.pch";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Paintbrush/Sources/**";
 				INFOPLIST_FILE = "Paintbrush/Supporting Files/Info-AppStore.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = "-DAPPSTORE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
 				PRODUCT_NAME = Paintbrush;
-				SDKROOT = macosx10.6;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				WRAPPER_EXTENSION = app;
@@ -1358,7 +1368,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.2.0;
+				CURRENT_PROJECT_VERSION = 2.2.1;
 				ONLY_ACTIVE_ARCH = YES;
 				SUPPORTED_PLATFORMS = macosx;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
@@ -1400,7 +1410,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
-				CURRENT_PROJECT_VERSION = 2.2.0;
+				CURRENT_PROJECT_VERSION = 2.2.1;
 				SUPPORTED_PLATFORMS = macosx;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -1441,7 +1451,7 @@
 			buildSettings = {
 				ARCHS = "$(NATIVE_ARCH)";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.0.0;
+				CURRENT_PROJECT_VERSION = 2.2.1;
 				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
@@ -1460,7 +1470,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				CURRENT_PROJECT_VERSION = 2.0.0;
+				CURRENT_PROJECT_VERSION = 2.2.1;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;

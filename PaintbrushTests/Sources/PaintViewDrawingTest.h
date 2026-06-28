@@ -17,10 +17,10 @@
  */
 
 
-#import <SenTestingKit/SenTestingKit.h>
+#import <XCTest/XCTest.h>
 
 
-@interface PaintViewDrawingTest : SenTestCase {
+@interface PaintViewDrawingTest : XCTestCase {
 
 }
 

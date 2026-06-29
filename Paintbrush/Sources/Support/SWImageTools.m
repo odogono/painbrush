@@ -19,6 +19,7 @@
 
 #import "SWImageTools.h"
 #import "SWDocument.h"
+#import <CoreImage/CoreImage.h>
 #import <QuartzCore/QuartzCore.h>
 
 

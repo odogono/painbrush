@@ -557,16 +557,8 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	{
 		SWSelectionTool *currentTool = (SWSelectionTool *)[toolbox currentTool];
 		
-		NSBitmapImageRep *selectedImage = [currentTool selectedImage];		
-		
-		// Make sure we flip the image before we put it in the pasteboard
-		[SWImageTools flipImageVertical:selectedImage];
-		
 		[pb declareTypes:[NSArray arrayWithObject:NSTIFFPboardType] owner:self];
-		[pb setData:[selectedImage TIFFRepresentation] forType:NSTIFFPboardType];
-		
-		// Now flip it again
-		[SWImageTools flipImageVertical:selectedImage];
+		[pb setData:[currentTool imageData] forType:NSTIFFPboardType];
 	}
 }
 
@@ -609,13 +601,13 @@ static BOOL kSWDocumentWillShowSheet = YES;
 		// Use ceiling because pixels can be fractions, but the tool assumes integer values								 
 		rect.size = NSMakeSize(ceil([temp size].width), ceil([temp size].height));
 		
-		[dataSource restoreBufferImageFromData:data];
-		
 		// As always, flip the image to be viewed in our flipped view
-		[SWImageTools flipImageVertical:[dataSource bufferImage]];
+		[SWImageTools flipImageVertical:temp];
+		[SWImageTools clearImage:[dataSource bufferImage]];
 
 		[(SWSelectionTool *)[toolbox currentTool] setClippingRect:rect
-														 forImage:[dataSource bufferImage]
+														 forImage:temp
+													  bufferImage:[dataSource bufferImage]
 													withMainImage:[dataSource mainImage]];
 		[temp release];
 		[paintView setNeedsDisplay:YES];

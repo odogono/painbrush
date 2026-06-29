@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		5E5974913AAB38B4C492E4A4 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9B20F4903526FC08A9AD2E2 /* XCTest.framework */; };
 		2706B88010ED719500080D4A /* PaintViewDrawingTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B81010ED6FE400080D4A /* PaintViewDrawingTest.m */; };
+		41C0400D8BE04E648080A101 /* SWSelectionTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400C8BE04E648080A101 /* SWSelectionTest.swift */; };
+		41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
+		41C0400F8BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
+		41C040108BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
 		2706B94D10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		2706B94E10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		298DD4C7B3E9F87BC9342A98 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 273E0B6D0E32FC2200D11815 /* QuartzCore.framework */; };
@@ -264,6 +268,8 @@
 		271EEB1C0BBC352300319865 /* SWTextTool.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Paintbrush/Sources/Tools/SWTextTool.m"; sourceTree = "<group>"; };
 		2723FB5D1162830F005BCB1B /* SWImageDataSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Paintbrush/Sources/Model/SWImageDataSource.h"; sourceTree = "<group>"; };
 		2723FB5E1162830F005BCB1B /* SWImageDataSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Paintbrush/Sources/Model/SWImageDataSource.m"; sourceTree = "<group>"; };
+		41C0400B8BE04E648080A101 /* SWSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Paintbrush/Sources/Model/SWSelection.swift"; sourceTree = "<group>"; };
+		41C0400C8BE04E648080A101 /* SWSelectionTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PaintbrushTests/Sources/SWSelectionTest.swift"; sourceTree = "<group>"; };
 		272A86D40D74FA0B00630D0B /* curve.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Paintbrush/Resources/Images/curve.png"; sourceTree = "<group>"; };
 		272A86D60D74FA0B00630D0B /* ellipse.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Paintbrush/Resources/Images/ellipse.png"; sourceTree = "<group>"; };
 		272A86D80D74FA0B00630D0B /* eraser.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Paintbrush/Resources/Images/eraser.png"; sourceTree = "<group>"; };
@@ -474,6 +480,7 @@
 			children = (
 				2706B80F10ED6FE400080D4A /* PaintViewDrawingTest.h */,
 				2706B81010ED6FE400080D4A /* PaintViewDrawingTest.m */,
+				41C0400C8BE04E648080A101 /* SWSelectionTest.swift */,
 			);
 			name = Tests;
 			sourceTree = "<group>";
@@ -484,6 +491,7 @@
 				27A60E110B879A6A0091A1B0 /* Tools */,
 				2723FB5D1162830F005BCB1B /* SWImageDataSource.h */,
 				2723FB5E1162830F005BCB1B /* SWImageDataSource.m */,
+				41C0400B8BE04E648080A101 /* SWSelection.swift */,
 			);
 			name = Model;
 			sourceTree = "<group>";
@@ -1026,7 +1034,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				2706B88010ED719500080D4A /* PaintViewDrawingTest.m in Sources */,
+				41C0400D8BE04E648080A101 /* SWSelectionTest.swift in Sources */,
 				2706B94D10ED77A600080D4A /* DebugLog.m in Sources */,
+				41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */,
 				AFFB5C3C4AECD04504765B97 /* SWImageTools.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1074,6 +1084,7 @@
 				27A2E0BE16AB70B400F124D1 /* SWSavePanelAccessoryViewController.m in Sources */,
 				27A2E0BF16AB70B400F124D1 /* DebugLog.m in Sources */,
 				27A2E0C016AB70B400F124D1 /* SWImageDataSource.m in Sources */,
+				41C0400F8BE04E648080A101 /* SWSelection.swift in Sources */,
 				27A2E0C116AB70B400F124D1 /* SWPrintPanelAccessoryViewController.m in Sources */,
 				27A2E0C216AB70B400F124D1 /* PFMoveApplication.m in Sources */,
 				27A2E11016AB734700F124D1 /* SUUpdater.m in Sources */,
@@ -1123,6 +1134,7 @@
 				27A1CD2E10A64F02005D2D84 /* SWSavePanelAccessoryViewController.m in Sources */,
 				2706B94E10ED77A600080D4A /* DebugLog.m in Sources */,
 				2723FB5F1162830F005BCB1B /* SWImageDataSource.m in Sources */,
+				41C040108BE04E648080A101 /* SWSelection.swift in Sources */,
 				27CD323011F6361700AB5996 /* SWPrintPanelAccessoryViewController.m in Sources */,
 				277FCC84123DB70800249A3F /* PFMoveApplication.m in Sources */,
 			);
@@ -1227,6 +1239,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 2.2.1;
 				FRAMEWORK_SEARCH_PATHS = "$(DEVELOPER_LIBRARY_DIR)/Frameworks";
@@ -1246,9 +1259,11 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.PaintbrushTests;
+				PRODUCT_MODULE_NAME = Test;
 				PRODUCT_NAME = Test;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
@@ -1258,6 +1273,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = YES;
 				CURRENT_PROJECT_VERSION = 2.2.1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -1276,9 +1292,11 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.PaintbrushTests;
+				PRODUCT_MODULE_NAME = Test;
 				PRODUCT_NAME = Test;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
 				WRAPPER_EXTENSION = xctest;
 			};
 			name = Release;
@@ -1288,6 +1306,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 2.2.1;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -1316,9 +1335,11 @@
 					"-DAPPSTORE",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
+				PRODUCT_MODULE_NAME = Paintbrush;
 				PRODUCT_NAME = Paintbrush;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				WRAPPER_EXTENSION = app;
@@ -1331,6 +1352,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 2.2.1;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1354,9 +1376,11 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = "-DAPPSTORE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
+				PRODUCT_MODULE_NAME = Paintbrush;
 				PRODUCT_NAME = Paintbrush;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				WRAPPER_EXTENSION = app;
@@ -1367,6 +1391,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 2.2.1;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1398,7 +1423,9 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				OTHER_CFLAGS = "-DDEBUG";
 				PRODUCT_NAME = Paintbrush;
+				PRODUCT_MODULE_NAME = Paintbrush;
 				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				WRAPPER_EXTENSION = app;
@@ -1410,6 +1437,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
+				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 2.2.1;
 				SUPPORTED_PLATFORMS = macosx;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
@@ -1439,7 +1467,9 @@
 				INFOPLIST_FILE = "Paintbrush/Supporting Files/Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				PRODUCT_NAME = Paintbrush;
+				PRODUCT_MODULE_NAME = Paintbrush;
 				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 				WRAPPER_EXTENSION = app;

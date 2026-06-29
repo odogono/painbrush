@@ -20,36 +20,27 @@
 #import <Cocoa/Cocoa.h>
 #import "SWTool.h"
 
+@class SWSelection;
+
 @interface SWSelectionTool : SWTool {
-	NSRect clippingRect;
-	
-	// The two images, and the one pointer to the active image
-	NSBitmapImageRep *selectedImage;
-	NSBitmapImageRep *selImageWithTransparency;
-	NSBitmapImageRep *selImageSansTransparency;
-	
 	NSTimer *animationTimer;
 	CGFloat dottedLineArray[2];
 	NSInteger dottedLineOffset;
-	NSBitmapImageRep *originalImageCopy;
 	NSPoint previousPoint;
-	NSPoint oldOrigin;
-	BOOL isSelected;
-	BOOL isAlreadyShifting;
-	NSInteger deltax, deltay;
-	char direction;					// Either X or Y
-	
+
 	BOOL shouldOmitBackground;
+	SWSelection *selection;
 }
 
 - (BOOL)isSelected;
 - (NSRect)clippingRect;
 - (NSBitmapImageRep *)selectedImage;
 - (NSData *)imageData;
-- (void)setClippingRect:(NSRect)rect forImage:(NSBitmapImageRep *)image withMainImage:(NSBitmapImageRep *)image;
+- (void)setClippingRect:(NSRect)rect
+			   forImage:(NSBitmapImageRep *)image
+			bufferImage:(NSBitmapImageRep *)bufferImage
+		  withMainImage:(NSBitmapImageRep *)mainImage;
 - (void)drawNewBorder:(NSTimer *)timer;
 - (void)updateBackgroundOmission;
-
-@property (assign, readonly) NSPoint oldOrigin;
 
 @end

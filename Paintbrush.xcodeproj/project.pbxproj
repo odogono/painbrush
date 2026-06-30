@@ -13,6 +13,9 @@
 		41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
 		41C0400F8BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
 		41C040108BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
+		41C040118BE04E648080A101 /* SWImageDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 2723FB5E1162830F005BCB1B /* SWImageDataSource.m */; };
+		41C040128BE04E648080A101 /* SWTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A60E130B879A6A0091A1B0 /* SWTool.m */; };
+		41C040138BE04E648080A101 /* SWBrushTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A60E1B0B879A6A0091A1B0 /* SWBrushTool.m */; };
 		2706B94D10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		2706B94E10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		298DD4C7B3E9F87BC9342A98 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 273E0B6D0E32FC2200D11815 /* QuartzCore.framework */; };
@@ -1037,6 +1040,9 @@
 				41C0400D8BE04E648080A101 /* SWSelectionTest.swift in Sources */,
 				2706B94D10ED77A600080D4A /* DebugLog.m in Sources */,
 				41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */,
+				41C040118BE04E648080A101 /* SWImageDataSource.m in Sources */,
+				41C040128BE04E648080A101 /* SWTool.m in Sources */,
+				41C040138BE04E648080A101 /* SWBrushTool.m in Sources */,
 				AFFB5C3C4AECD04504765B97 /* SWImageTools.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

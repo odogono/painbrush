@@ -18,7 +18,49 @@
 
 
 #import "SWImageDataSource.h"
-#import "SWToolboxController.h"
+
+static NSColor *SWCanvasBackgroundColor(void)
+{
+	Class toolboxControllerClass = NSClassFromString(@"SWToolboxController");
+	SEL sharedControllerSelector = @selector(sharedToolboxPanelController);
+	SEL backgroundColorSelector = @selector(backgroundColor);
+	if (![toolboxControllerClass respondsToSelector:sharedControllerSelector])
+		return [NSColor clearColor];
+
+	id toolboxController = [toolboxControllerClass performSelector:sharedControllerSelector];
+	if (![toolboxController respondsToSelector:backgroundColorSelector])
+		return [NSColor clearColor];
+
+	NSColor *backgroundColor = [toolboxController performSelector:backgroundColorSelector];
+	return [backgroundColor isKindOfClass:[NSColor class]] ? backgroundColor : [NSColor clearColor];
+}
+
+
+@implementation SWCanvasHistorySnapshot
+
+@synthesize canvasSize;
+@synthesize mainImageData;
+
+- (id)initWithCanvasSize:(NSSize)sizeIn
+		   mainImageData:(NSData *)data
+{
+	self = [super init];
+	if (self)
+	{
+		canvasSize = sizeIn;
+		// TIFFRepresentation hands back an immutable NSData, so retain rather than copy the buffer
+		mainImageData = [data retain];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	[mainImageData release];
+	[super dealloc];
+}
+
+@end
 
 
 @implementation SWImageDataSource
@@ -42,8 +84,8 @@
 		
 		// New Image: gotta paint the background color
 		SWLockFocus(mainImage);
-		
-		NSColor *bgColor = [[SWToolboxController sharedToolboxPanelController] backgroundColor];
+
+		NSColor *bgColor = SWCanvasBackgroundColor();
 		[bgColor setFill];
 
 		NSRect newRect = (NSRect) { NSZeroPoint, sizeIn };
@@ -58,7 +100,7 @@
 - (id)initWithURL:(NSURL *)url
 {
 	// Temporary image to get dimensions
-	NSBitmapImageRep *tempImage = [NSBitmapImageRep imageRepWithContentsOfURL:url];
+	NSBitmapImageRep *tempImage = (NSBitmapImageRep *)[NSBitmapImageRep imageRepWithContentsOfURL:url];
 	
 	if (!tempImage)	// failure case
 		return nil;
@@ -79,7 +121,7 @@
 
 - (id)initWithPasteboard
 {
-	NSBitmapImageRep *tempImage = [NSBitmapImageRep imageRepWithPasteboard:[NSPasteboard generalPasteboard]];
+	NSBitmapImageRep *tempImage = (NSBitmapImageRep *)[NSBitmapImageRep imageRepWithPasteboard:[NSPasteboard generalPasteboard]];
 	
 	NSAssert(tempImage, @"We can't initialize with a pasteboard without an image on it!");
 	if (!tempImage)	// failure case
@@ -133,21 +175,23 @@
 		[[NSGraphicsContext currentContext] setImageInterpolation:NSImageInterpolationNone];
 		[mainImage drawInRect:newRect];
 	}
-	else 
+	else
 	{
-		NSColor *bgColor = [[SWToolboxController sharedToolboxPanelController] backgroundColor];
+		NSColor *bgColor = SWCanvasBackgroundColor();
 		[bgColor setFill];
 		NSRectFill(newRect);
 		[mainImage drawAtPoint:NSZeroPoint];
 	}
 	SWUnlockFocus(newMainImage);
-	
+
 	// Release and set (no need to retain: we already own the new images)
 	[mainImage release];
 	[bufferImage release];
+	[imageArray release];
 	mainImage = newMainImage;
 	bufferImage = newBufferImage;
-	
+	imageArray = nil;
+
 	// Finally, update our cached size
 	size = newSize;
 }
@@ -175,6 +219,33 @@
 // -----------------------------------------------------------------------------
 //  Data
 // -----------------------------------------------------------------------------
+
+- (SWCanvasHistorySnapshot *)canvasHistorySnapshot
+{
+	return [[[SWCanvasHistorySnapshot alloc] initWithCanvasSize:size
+												 mainImageData:[self copyMainImageData]] autorelease];
+}
+
+
+- (void)restoreCanvasHistorySnapshot:(SWCanvasHistorySnapshot *)snapshot
+{
+	if (!snapshot)
+		return;
+
+	[mainImage release];
+	[bufferImage release];
+	[imageArray release];
+	mainImage = nil;
+	bufferImage = nil;
+	imageArray = nil;
+
+	size = [snapshot canvasSize];
+	// initImageRep: leaves both reps fully transparent; restoreMainImageFromData: then overwrites main
+	[SWImageTools initImageRep:&mainImage withSize:size];
+	[SWImageTools initImageRep:&bufferImage withSize:size];
+	[self restoreMainImageFromData:[snapshot mainImageData]];
+}
+
 
 - (NSData *)copyMainImageData
 {
@@ -213,11 +284,13 @@
 	{
 		// Pasting something bigger than the previous image, so create a new one with the new size
 		[bufferImage release];
+		[imageArray release];
 		bufferImage = nil;
-		
+		imageArray = nil;
+
 		[SWImageTools initImageRep:&bufferImage withSize:finalRect.size];
 	}
-	
+
 	[SWImageTools drawToImage:bufferImage fromImage:imageRep withComposition:NO];
 	[imageRep release];
 }

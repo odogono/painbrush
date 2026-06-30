@@ -231,7 +231,7 @@
 	if (selection && [selection hasOriginalCanvasImage])
 	{
 		[selection restoreOriginalCanvasToImage:_mainImage];
-		[document handleUndoWithImageData:nil frame:NSZeroRect];
+		[document registerDrawingUndo];
 	}
 
 	// Checking to see if references have been made; otherwise causes strange drawing bugs

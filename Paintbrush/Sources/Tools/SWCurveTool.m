@@ -105,7 +105,7 @@
 			cp2 = point;
 			if (event == MOUSE_UP) 
 			{
-				[document handleUndoWithImageData:nil frame:NSZeroRect];
+				[document registerDrawingUndo];
 				drawToMe = mainImage;
 				numberOfClicks = 0;
 			}
@@ -149,7 +149,7 @@
 	if (_bufferImage && _mainImage && numberOfClicks > 0) 
 	{
 		numberOfClicks = 0;
-		[document handleUndoWithImageData:nil frame:NSZeroRect];
+		[document registerDrawingUndo];
 		[SWImageTools drawToImage:_mainImage fromImage:_bufferImage withComposition:YES];
 	}
 	

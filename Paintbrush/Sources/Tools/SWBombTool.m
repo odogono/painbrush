@@ -107,7 +107,7 @@
 {
 	// Stop the timer
 	[timer invalidate];
-	[document handleUndoWithImageData:nil frame:NSZeroRect];
+	[document registerDrawingUndo];
 	
 	SWLockFocus(_mainImage);	
 	[bombColor set];

@@ -253,8 +253,8 @@ static BOOL kSWDocumentWillShowSheet = YES;
 			// This is also important!
 			[toolbox tieUpLooseEndsForCurrentTool];
 
-			[self handleUndoWithImageData:nil frame:NSZeroRect];
-			
+			[self registerCanvasResizeUndo];
+
 			[dataSource resizeToSize:newSize scaleImage:[resizeController scales]];
 			[paintView setFrame:NSMakeRect(0.0, 0.0, newSize.width, newSize.height)]; // Forces a redraw
 			
@@ -508,42 +508,44 @@ static BOOL kSWDocumentWillShowSheet = YES;
 ////////////////////////////////////////////////////////////////////////////////
 
 
-// Undo canvas resizing
-- (void)handleUndoWithImageData:(NSData *)mainImageData frame:(NSRect)frame
+- (void)registerCanvasHistoryUndoWithActionName:(NSString *)actionName
 {
+	SWCanvasHistorySnapshot *snapshot = [dataSource canvasHistorySnapshot];
 	NSUndoManager *undo = [self undoManager];
-	NSRect currentFrame = NSZeroRect;
-	currentFrame.size = [dataSource size];
-	NSData *mainImageDataCurrent = [dataSource copyMainImageData];
-	[[undo prepareWithInvocationTarget:self] handleUndoWithImageData:mainImageDataCurrent frame:currentFrame];
-	
-	// Without resize, set the string to drawing
-	if (NSEqualSizes(frame.size, NSZeroSize) || NSEqualSizes(frame.size, [dataSource size]))
-		[undo setActionName:NSLocalizedString(@"Drawing", @"The standard undo command string for drawings")];
-	else
-	{
-		// It doesn't matter here if we scale or not, since we'll be replacing the image in a moment
-		[dataSource resizeToSize:frame.size scaleImage:NO];
-		[paintView setFrame:frame];
-		[clipView setNeedsDisplay:YES];
-		[undo setActionName:NSLocalizedString(@"Resize", @"The undo command string image resizings")];
-	}
-	
-	if (mainImageData == nil)
-	{
-		// No data was passed, so retrieve it from the data source
-		NSData *mainImageData = [dataSource copyMainImageData];
-		[[undo prepareWithInvocationTarget:self] handleUndoWithImageData:mainImageData frame:frame];
-	}
-	
-	[dataSource restoreMainImageFromData:mainImageData];
-	
-	// Only clear the overlay during an undo -- NEVER during the initial setup
-	if ([undo isUndoing])
+	[[undo prepareWithInvocationTarget:self] restoreCanvasHistorySnapshot:snapshot
+															   actionName:actionName];
+	[undo setActionName:actionName];
+}
+
+
+- (void)registerDrawingUndo
+{
+	[self registerCanvasHistoryUndoWithActionName:
+		NSLocalizedString(@"Drawing", @"The standard undo command string for drawings")];
+}
+
+
+- (void)registerCanvasResizeUndo
+{
+	[self registerCanvasHistoryUndoWithActionName:
+		NSLocalizedString(@"Resize", @"The undo command string image resizings")];
+}
+
+
+- (void)restoreCanvasHistorySnapshot:(SWCanvasHistorySnapshot *)snapshot
+						   actionName:(NSString *)actionName
+{
+	// Register the inverse: capture the current canvas so this restore can be undone/redone
+	[self registerCanvasHistoryUndoWithActionName:actionName];
+
+	[dataSource restoreCanvasHistorySnapshot:snapshot];
+	[paintView setFrame:NSMakeRect(0.0, 0.0, [dataSource size].width, [dataSource size].height)];
+	// Only clear the overlay while undoing -- NEVER while redoing, or we wipe the
+	// restored selection and re-enter undo registration via the current tool's tieUpLooseEnds
+	if ([[self undoManager] isUndoing])
 		[paintView clearOverlay];
-	
-	// But force a redraw either way
 	[paintView setNeedsDisplay:YES];
+	[clipView setNeedsDisplay:YES];
 }
 
 
@@ -582,7 +584,7 @@ static BOOL kSWDocumentWillShowSheet = YES;
 - (IBAction)paste:(id)sender
 {
 	// Prepare for a paste by allowing an undo
-	[self handleUndoWithImageData:nil frame:NSZeroRect];
+	[self registerDrawingUndo];
 	[toolboxController switchToScissors:nil];
 	
 	NSData *data = [SWImageTools readImageFromPasteboard:[NSPasteboard generalPasteboard]];
@@ -725,7 +727,7 @@ static BOOL kSWDocumentWillShowSheet = YES;
 {
 	if ([[super windowForSheet] isKeyWindow])
 	{
-		[self handleUndoWithImageData:nil frame:NSZeroRect];
+		[self registerDrawingUndo];
 		NSBitmapImageRep *image = [dataSource mainImage];
 		[SWImageTools flipImageHorizontal:image];
 		[paintView setNeedsDisplay:YES];
@@ -737,7 +739,7 @@ static BOOL kSWDocumentWillShowSheet = YES;
 {
 	if ([[super windowForSheet] isKeyWindow]) 
 	{
-		[self handleUndoWithImageData:nil frame:NSZeroRect];
+		[self registerDrawingUndo];
 		NSBitmapImageRep *image = [dataSource mainImage];
 		[SWImageTools flipImageVertical:image];
 		[paintView setNeedsDisplay:YES];
@@ -758,9 +760,9 @@ static BOOL kSWDocumentWillShowSheet = YES;
 		
 		// This is also important!
 		[toolbox tieUpLooseEndsForCurrentTool];
-		
-		[self handleUndoWithImageData:nil frame:NSZeroRect];
-				
+
+		[self registerCanvasResizeUndo];
+
 		// Pretend we are a resize
 		[dataSource resizeToSize:rect.size scaleImage:NO];
 		
@@ -779,7 +781,7 @@ static BOOL kSWDocumentWillShowSheet = YES;
 // We offload the heavy lifting to an external class
 - (IBAction)invertColors:(id)sender
 {
-	[self handleUndoWithImageData:nil frame:NSZeroRect];
+	[self registerDrawingUndo];
 	[SWImageTools invertImage:[dataSource mainImage]];
 	[paintView setNeedsDisplay:YES];
 }

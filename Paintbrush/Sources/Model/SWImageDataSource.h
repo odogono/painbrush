@@ -19,6 +19,20 @@
 
 #import <Cocoa/Cocoa.h>
 
+@interface SWCanvasHistorySnapshot : NSObject
+{
+	NSSize canvasSize;
+	NSData * mainImageData;
+}
+
+- (id)initWithCanvasSize:(NSSize)size
+		   mainImageData:(NSData *)data;
+
+@property (readonly) NSSize canvasSize;
+@property (readonly) NSData * mainImageData;
+
+@end
+
 
 @interface SWImageDataSource : NSObject 
 {
@@ -40,6 +54,8 @@
 		  scaleImage:(BOOL)shouldScale;
 
 // Need to change the image?  We got your back -- here be datas
+- (SWCanvasHistorySnapshot *)canvasHistorySnapshot;
+- (void)restoreCanvasHistorySnapshot:(SWCanvasHistorySnapshot *)snapshot;
 - (NSData *)copyMainImageData;
 - (void)restoreMainImageFromData:(NSData *)tiffData;
 - (void)restoreBufferImageFromData:(NSData *)tiffData; // For pasting

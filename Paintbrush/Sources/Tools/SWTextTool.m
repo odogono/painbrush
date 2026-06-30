@@ -57,7 +57,7 @@
 		else if (event == MOUSE_DOWN)
 		{
 			// We're about to draw, so prep an undo
-			[document handleUndoWithImageData:nil frame:NSZeroRect];
+			[document registerDrawingUndo];
 
 			drawToMe = mainImage;
 			canInsert = NO;

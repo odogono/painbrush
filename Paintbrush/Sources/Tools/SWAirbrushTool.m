@@ -103,7 +103,7 @@
 	
 	isSpraying = NO;
 	
-	[document handleUndoWithImageData:nil frame:NSZeroRect];
+	[document registerDrawingUndo];
 	[SWImageTools drawToImage:_mainImage fromImage:_bufferImage withComposition:NO];
 	[SWImageTools clearImage:_bufferImage];
 }

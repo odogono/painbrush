@@ -59,7 +59,7 @@
 	
 	if (event == MOUSE_UP)
 	{
-		[document handleUndoWithImageData:nil frame:NSZeroRect];
+		[document registerDrawingUndo];
 		drawToMe = mainImage;	
 	}
 	else

@@ -31,6 +31,7 @@
 @class SWTextToolWindowController;
 @class SWSavePanelAccessoryViewController;
 @class SWImageDataSource;
+@class SWCanvasHistorySnapshot;
 
 @interface SWDocument : NSDocument
 {
@@ -83,8 +84,10 @@
 - (void)setUpPaintView;
 
 // Undo
-- (void)handleUndoWithImageData:(NSData *)mainImageData 
-						  frame:(NSRect)frame;
+- (void)registerDrawingUndo;
+- (void)registerCanvasResizeUndo;
+- (void)restoreCanvasHistorySnapshot:(SWCanvasHistorySnapshot *)snapshot
+						   actionName:(NSString *)actionName;
 
 // For copy-and-paste
 - (void)writeImageToPasteboard:(NSPasteboard *)pb;

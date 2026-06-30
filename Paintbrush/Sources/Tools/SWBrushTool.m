@@ -56,7 +56,7 @@
 	
 	if (event == MOUSE_UP) 
 	{
-		[document handleUndoWithImageData:nil frame:NSZeroRect];
+		[document registerDrawingUndo];
 		[SWImageTools drawToImage:mainImage fromImage:bufferImage withComposition:YES];
 		[SWImageTools clearImage:bufferImage];
 

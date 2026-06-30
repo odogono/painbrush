@@ -61,7 +61,7 @@
 				  isEqualToColor:fillColor]) 
 		{
 			// Prep an undo - we're about to change things!
-			[document handleUndoWithImageData:nil frame:NSZeroRect];
+			[document registerDrawingUndo];
 			
 			// Create the image mask we will be using to fill the selecteds region
 			CGImageRef mask = [self floodFillSelect:NSMakePoint(point.x, point.y+1) tolerance:0.0];

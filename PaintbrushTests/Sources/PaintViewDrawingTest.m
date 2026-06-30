@@ -18,6 +18,8 @@
 
 
 #import "PaintViewDrawingTest.h"
+#import "SWBrushTool.h"
+#import "SWImageDataSource.h"
 #import "SWImageTools.h"
 
 static unsigned char *PBPixelAt(NSBitmapImageRep *image, NSInteger x, NSInteger y)
@@ -42,6 +44,92 @@ static void PBAssertPixelEquals(NSBitmapImageRep *image, NSInteger x, NSInteger 
     XCTAssertEqual(pixel[2], blue, @"blue channel mismatch at (%ld, %ld)", (long)x, (long)y);
     XCTAssertEqual(pixel[3], alpha, @"alpha channel mismatch at (%ld, %ld)", (long)x, (long)y);
 }
+
+static NSData *PBCanvasData(SWImageDataSource *dataSource)
+{
+    return [[dataSource mainImage] TIFFRepresentation];
+}
+
+static BOOL PBImageHasPixelWithAlpha(NSBitmapImageRep *image, unsigned char alpha)
+{
+    for (NSInteger y = 0; y < [image pixelsHigh]; y++) {
+        for (NSInteger x = 0; x < [image pixelsWide]; x++) {
+            if (PBPixelAt(image, x, y)[3] == alpha) {
+                return YES;
+            }
+        }
+    }
+    return NO;
+}
+
+@interface PBCanvasUndoHost : NSObject
+{
+    SWImageDataSource *dataSource;
+    NSUndoManager *undoManager;
+}
+
+- (id)initWithDataSource:(SWImageDataSource *)aDataSource;
+- (NSUndoManager *)undoManager;
+- (void)registerDrawingUndo;
+- (void)registerCanvasResizeUndo;
+- (void)restoreCanvasHistorySnapshot:(SWCanvasHistorySnapshot *)snapshot
+                           actionName:(NSString *)actionName;
+
+@end
+
+@implementation PBCanvasUndoHost
+
+- (id)initWithDataSource:(SWImageDataSource *)aDataSource
+{
+    self = [super init];
+    if (self) {
+        dataSource = [aDataSource retain];
+        undoManager = [[NSUndoManager alloc] init];
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    [dataSource release];
+    [undoManager release];
+    [super dealloc];
+}
+
+- (NSUndoManager *)undoManager
+{
+    return undoManager;
+}
+
+- (void)registerCanvasUndoWithActionName:(NSString *)actionName
+{
+    SWCanvasHistorySnapshot *snapshot = [dataSource canvasHistorySnapshot];
+    [[undoManager prepareWithInvocationTarget:self] restoreCanvasHistorySnapshot:snapshot
+                                                                      actionName:actionName];
+    [undoManager setActionName:actionName];
+}
+
+- (void)registerDrawingUndo
+{
+    [self registerCanvasUndoWithActionName:@"Drawing"];
+}
+
+- (void)registerCanvasResizeUndo
+{
+    [self registerCanvasUndoWithActionName:@"Resize"];
+}
+
+- (void)restoreCanvasHistorySnapshot:(SWCanvasHistorySnapshot *)snapshot
+                           actionName:(NSString *)actionName
+{
+    SWCanvasHistorySnapshot *currentSnapshot = [dataSource canvasHistorySnapshot];
+    [[undoManager prepareWithInvocationTarget:self] restoreCanvasHistorySnapshot:currentSnapshot
+                                                                      actionName:actionName];
+    [undoManager setActionName:actionName];
+    [dataSource restoreCanvasHistorySnapshot:snapshot];
+}
+
+@end
 
 @implementation PaintViewDrawingTest
 
@@ -162,6 +250,80 @@ static void PBAssertPixelEquals(NSBitmapImageRep *image, NSInteger x, NSInteger 
     XCTAssertEqualObjects([SWImageTools convertFileType:@"TIFF"], @"tif");
     XCTAssertEqualObjects([SWImageTools convertFileType:@"JPEG"], @"jpg");
     XCTAssertEqualObjects([SWImageTools convertFileType:@"Paintbrush"], @"");
+}
+
+- (void)testCanvasHistorySnapshotRestoresSizePixelsAndClearsBuffer
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(2.0, 2.0)] autorelease];
+    PBSetPixel([dataSource mainImage], 1, 1, 255, 0, 0, 255);
+    PBSetPixel([dataSource bufferImage], 0, 0, 0, 0, 255, 255);
+    SWCanvasHistorySnapshot *snapshot = [dataSource canvasHistorySnapshot];
+
+    [dataSource resizeToSize:NSMakeSize(3.0, 2.0) scaleImage:NO];
+    PBSetPixel([dataSource mainImage], 1, 1, 0, 255, 0, 255);
+
+    [dataSource restoreCanvasHistorySnapshot:snapshot];
+
+    XCTAssertEqual([dataSource size].width, 2.0);
+    XCTAssertEqual([dataSource size].height, 2.0);
+    PBAssertPixelEquals([dataSource mainImage], 1, 1, 255, 0, 0, 255);
+    XCTAssertFalse(PBImageHasPixelWithAlpha([dataSource bufferImage], 255));
+}
+
+- (void)testDrawingUndoAndRedoRestoreCanvasPixels
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(3.0, 2.0)] autorelease];
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    NSData *originalCanvasData = PBCanvasData(dataSource);
+
+    SWBrushTool *tool = [[[SWBrushTool alloc] initWithController:nil] autorelease];
+    [tool setDocument:(SWDocument *)undoHost];
+    [tool setFrontColor:[NSColor blackColor]];
+    [tool setBackColor:[NSColor whiteColor]];
+    [tool setLineWidth:1.0];
+    [tool setSavedPoint:NSMakePoint(0.0, 0.0)];
+    [tool performDrawAtPoint:NSMakePoint(0.0, 0.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(2.0, 0.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_DRAGGED];
+    [tool performDrawAtPoint:NSMakePoint(2.0, 0.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_UP];
+    NSData *drawnCanvasData = PBCanvasData(dataSource);
+
+    XCTAssertNotEqualObjects(drawnCanvasData, originalCanvasData);
+    [[undoHost undoManager] undo];
+    XCTAssertEqualObjects(PBCanvasData(dataSource), originalCanvasData);
+    [[undoHost undoManager] redo];
+    XCTAssertEqualObjects(PBCanvasData(dataSource), drawnCanvasData);
+}
+
+- (void)testResizeUndoAndRedoRestoreCanvasSizeAndPixels
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(2.0, 2.0)] autorelease];
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    PBSetPixel([dataSource mainImage], 1, 1, 255, 0, 0, 255);
+    NSData *originalCanvasData = PBCanvasData(dataSource);
+
+    [undoHost registerCanvasResizeUndo];
+    [dataSource resizeToSize:NSMakeSize(3.0, 2.0) scaleImage:NO];
+    PBSetPixel([dataSource mainImage], 2, 1, 0, 255, 0, 255);
+    NSData *resizedCanvasData = PBCanvasData(dataSource);
+
+    [[undoHost undoManager] undo];
+    XCTAssertEqual([dataSource size].width, 2.0);
+    XCTAssertEqual([dataSource size].height, 2.0);
+    XCTAssertEqualObjects(PBCanvasData(dataSource), originalCanvasData);
+
+    [[undoHost undoManager] redo];
+    XCTAssertEqual([dataSource size].width, 3.0);
+    XCTAssertEqual([dataSource size].height, 2.0);
+    XCTAssertEqualObjects(PBCanvasData(dataSource), resizedCanvasData);
 }
 
 @end

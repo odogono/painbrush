@@ -26,6 +26,14 @@
 #import "Test-Swift.h"
 #endif
 
+static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
+{
+	NSSize size = [image size];
+	point.x = fmin(fmax(point.x, 0.0), size.width);
+	point.y = fmin(fmax(point.y, 0.0), size.height);
+	return point;
+}
+
 @implementation SWSelectionTool
 
 - (void)updateSelectionExtent
@@ -82,6 +90,20 @@
 	return path;	
 }
 
+- (NSColor *)selectionBackgroundColor
+{
+	if ([backColor isKindOfClass:[NSColor class]])
+		return backColor;
+
+	if ([toolboxController respondsToSelector:@selector(backgroundColor)]) {
+		NSColor *color = [toolboxController backgroundColor];
+		if ([color isKindOfClass:[NSColor class]])
+			return color;
+	}
+
+	return [NSColor whiteColor];
+}
+
 - (NSBezierPath *)performDrawAtPoint:(NSPoint)point 
 					   withMainImage:(NSBitmapImageRep *)mainImage 
 						 bufferImage:(NSBitmapImageRep *)bufferImage 
@@ -109,12 +131,19 @@
 	// If the rectangle has already been drawn
 	if ([self isSelected])
 	{
-		// We checked for the drag because it's possible that the cursor has been dragged outside the 
-		// clipping rect in one single event
-		if (event == MOUSE_DRAGGED || [[NSBezierPath bezierPathWithRect:[self clippingRect]] containsPoint:point])
+		BOOL pointIsInsideSelection = [[NSBezierPath bezierPathWithRect:[self clippingRect]] containsPoint:point];
+
+		if (event == MOUSE_DOWN)
 		{
-			if (event == MOUSE_DOWN)
+			draggingSelection = pointIsInsideSelection;
+			if (draggingSelection)
 				previousPoint = point;
+			else
+				[self tieUpLooseEnds];
+		}
+		else if (event == MOUSE_DRAGGED || (event == MOUSE_UP && draggingSelection))
+		{
+			NSRect previousSelectionRect = [self clippingRect];
 
 			CGFloat deltaX = point.x - previousPoint.x;
 			CGFloat deltaY = point.y - previousPoint.y;
@@ -126,37 +155,38 @@
 			[self updateSelectionExtent];
 
 			// The clipping rect is the new redraw rect
+			[super addRectToRedrawRect:previousSelectionRect];
 			[super addRectToRedrawRect:[self clippingRect]];
 			
 			// Finally, move the image and stroke it
 			[self drawNewBorder:nil];
+
+			if (event == MOUSE_UP)
+				draggingSelection = NO;
 		} 
-		else
+		else if (!pointIsInsideSelection)
+		{
+			draggingSelection = NO;
 			[self tieUpLooseEnds];
+		}
 	} 
 	else
 	{
 		[SWImageTools clearImage:bufferImage];
 		marqueeRect = NSZeroRect;
 		
-		// Taking care of the outer bounds of the image
-		if (point.x < 0)
-			point.x = 0.0;
-		if (point.y < 0)
-			point.y = 0.0;
-		if (point.x > [mainImage size].width)
-			point.x = [mainImage size].width;
-		if (point.y > [mainImage size].height)
-			point.y = [mainImage size].height;
+		NSPoint constrainedSavedPoint = SWPointConstrainedToImage(savedPoint, mainImage);
+		point = SWPointConstrainedToImage(point, mainImage);
 				
 		// If this check fails, then they didn't draw a rectangle
-		if (!NSEqualPoints(point, savedPoint)) 
+		if (!NSEqualPoints(point, constrainedSavedPoint))
 		{
 			// Set the redraw rectangle
-			[super addRedrawRectFromPoint:savedPoint toPoint:point];
+			[super addRedrawRectFromPoint:constrainedSavedPoint toPoint:point];
 			
-			NSRect rect = NSMakeRect(fmin(savedPoint.x, point.x), fmin(savedPoint.y, point.y),
-									 fabs(point.x - savedPoint.x), fabs(point.y - savedPoint.y));
+			NSRect rect = NSMakeRect(fmin(constrainedSavedPoint.x, point.x), fmin(constrainedSavedPoint.y, point.y),
+									 fabs(point.x - constrainedSavedPoint.x), fabs(point.y - constrainedSavedPoint.y));
+			marqueeRect = rect;
 
 			// A straight horizontal/vertical drag yields a zero-area rect that still
 			// differs from savedPoint; creating a 0-sized selection would crash.
@@ -168,7 +198,7 @@
 					[selection release];
 					selection = [[SWSelection alloc] initWithCanvasImage:mainImage
 																	rect:rect
-														 backgroundColor:backColor
+														 backgroundColor:[self selectionBackgroundColor]
 														  omitBackground:shouldOmitBackground];
 					marqueeRect = NSZeroRect;
 					[self updateSelectionExtent];
@@ -233,6 +263,14 @@
 	[self discardSelection];
 }
 
+- (void)updateBackgroundOmission
+{
+	[selection setShouldOmitBackground:shouldOmitBackground];
+	
+	// Update the UI with the new image
+	[self drawNewBorder:nil];
+}
+
 - (void)discardSelection
 {
 	if (animationTimer)
@@ -247,19 +285,11 @@
 	[selection release];
 	selection = nil;
 	marqueeRect = NSZeroRect;
+	draggingSelection = NO;
 	[document resetSelectionExtent];
-	[super resetRedrawRect];
 	_bufferImage = nil;
 	_mainImage = nil;
-}
-
-
-- (void)updateBackgroundOmission
-{
-	[selection setShouldOmitBackground:shouldOmitBackground];
-	
-	// Update the UI with the new image
-	[self drawNewBorder:nil];
+	[super resetRedrawRect];
 }
 
 
@@ -314,7 +344,7 @@
 	[selection release];
 	selection = nil;
 	marqueeRect = NSZeroRect;
-	
+	draggingSelection = NO;
 	// Clean up after ourselves
 	[mainImageCopy release];
 	_mainImage = nil;
@@ -324,7 +354,7 @@
 {
 	if (selection)
 		return [selection clippingRect];
-	if (!NSEqualRects(marqueeRect, NSZeroRect))
+	if (!NSIsEmptyRect(marqueeRect))
 		return marqueeRect;
 	return NSZeroRect;
 }
@@ -340,7 +370,7 @@
 	[selection release];
 	selection = [[SWSelection alloc] initWithPastedImage:image
 												 origin:rect.origin
-										backgroundColor:backColor
+										backgroundColor:[self selectionBackgroundColor]
 										 omitBackground:shouldOmitBackground];
 	[self updateSelectionExtent];
 

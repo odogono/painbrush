@@ -28,6 +28,7 @@
 	NSInteger dottedLineOffset;
 	NSPoint previousPoint;
 	NSRect marqueeRect;
+	BOOL draggingSelection;
 
 	BOOL shouldOmitBackground;
 	SWSelection *selection;

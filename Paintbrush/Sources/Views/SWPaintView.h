@@ -56,6 +56,7 @@
 - (NSRect)calculateWindowBounds:(NSRect)frameRect;
 - (void)setBackgroundColor:(NSColor *)color;
 - (void)clearOverlay;
+- (BOOL)shouldReceiveOffCanvasMouseEvents;
 
 // Getting info
 //- (NSPoint)currentMouseLocation;

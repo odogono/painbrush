@@ -538,16 +538,20 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	// Register the inverse: capture the current canvas so this restore can be undone/redone
 	[self registerCanvasHistoryUndoWithActionName:actionName];
 
-	[dataSource restoreCanvasHistorySnapshot:snapshot];
-	[paintView setFrame:NSMakeRect(0.0, 0.0, [dataSource size].width, [dataSource size].height)];
-	// Only clear the overlay while undoing -- NEVER while redoing, or we wipe the
-	// restored selection and re-enter undo registration via the current tool's tieUpLooseEnds
-	if ([[self undoManager] isUndoing]) {
+	if ([[self undoManager] isUndoing])
+	{
+		// The selection tool must DISCARD its live selection rather than tie it up:
+		// tieUpLooseEnds would re-register an undo mid-undo and wipe the restored
+		// selection. Every other tool still needs its overlay/tool state torn down
+		// (deleteKey + tieUpLooseEnds), exactly as clearOverlay did before.
 		if ([[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
 			[(SWSelectionTool *)[toolbox currentTool] discardSelection];
 		else
 			[paintView clearOverlay];
 	}
+
+	[dataSource restoreCanvasHistorySnapshot:snapshot];
+	[paintView setFrame:NSMakeRect(0.0, 0.0, [dataSource size].width, [dataSource size].height)];
 	[paintView setNeedsDisplay:YES];
 	[clipView setNeedsDisplay:YES];
 }

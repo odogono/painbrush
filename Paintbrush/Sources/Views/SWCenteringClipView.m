@@ -18,6 +18,7 @@
 
 
 #import "SWCenteringClipView.h"
+#import "SWPaintView.h"
 #import "SWScalingScrollView.h"
 
 @implementation SWCenteringClipView
@@ -143,6 +144,38 @@
 {
 	[super viewFrameChanged:notification];
 	[self centerDocument];
+}
+
+- (BOOL)shouldForwardMouseEventsToDocumentView
+{
+	NSView *documentView = [self documentView];
+	if (![documentView respondsToSelector:@selector(shouldReceiveOffCanvasMouseEvents)])
+		return NO;
+	return [(SWPaintView *)documentView shouldReceiveOffCanvasMouseEvents];
+}
+
+- (void)mouseDown:(NSEvent *)event
+{
+	if ([self shouldForwardMouseEventsToDocumentView])
+		[[self documentView] mouseDown:event];
+	else
+		[super mouseDown:event];
+}
+
+- (void)mouseDragged:(NSEvent *)event
+{
+	if ([self shouldForwardMouseEventsToDocumentView])
+		[[self documentView] mouseDragged:event];
+	else
+		[super mouseDragged:event];
+}
+
+- (void)mouseUp:(NSEvent *)event
+{
+	if ([self shouldForwardMouseEventsToDocumentView])
+		[[self documentView] mouseUp:event];
+	else
+		[super mouseUp:event];
 }
 
 // ----------------------------------------

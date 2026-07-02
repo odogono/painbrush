@@ -496,6 +496,11 @@
 	[self setNeedsDisplay:YES];
 }
 
+- (BOOL)shouldReceiveOffCanvasMouseEvents
+{
+	return [[toolbox currentTool] isKindOfClass:[SWSelectionTool class]];
+}
+
 // Tells the mainImage to refresh itself. Can be called from anywhere in the application.
 - (void)refreshImage:(id)sender
 {

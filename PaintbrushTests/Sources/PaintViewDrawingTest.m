@@ -19,14 +19,65 @@
 
 #import "PaintViewDrawingTest.h"
 #import "SWBrushTool.h"
+#import "SWCenteringClipView.h"
 #import "SWImageDataSource.h"
 #import "SWImageTools.h"
-#import "SWButtonCell.h"
 #import "SWSelectionTool.h"
+
+@interface PBToolboxControllerDouble : NSObject
+@property (assign) NSInteger lineWidth;
+@property (retain) NSColor *foregroundColor;
+@property (retain) NSColor *backgroundColor;
+@property (assign) NSInteger fillStyle;
+@property (assign) BOOL selectionTransparency;
+@end
+
+@implementation PBToolboxControllerDouble
+@synthesize lineWidth;
+@synthesize foregroundColor;
+@synthesize backgroundColor;
+@synthesize fillStyle;
+@synthesize selectionTransparency;
+
+- (void)dealloc
+{
+    [foregroundColor release];
+    [backgroundColor release];
+    [super dealloc];
+}
+
+@end
+
+@interface PBOffCanvasMouseViewDouble : NSView
+@property (assign) BOOL receiveOffCanvasMouseEvents;
+@property (assign) NSInteger mouseDownCount;
+@end
+
+@implementation PBOffCanvasMouseViewDouble
+@synthesize receiveOffCanvasMouseEvents;
+@synthesize mouseDownCount;
+
+- (BOOL)shouldReceiveOffCanvasMouseEvents
+{
+    return receiveOffCanvasMouseEvents;
+}
+
+- (void)mouseDown:(NSEvent *)event
+{
+#pragma unused(event)
+    mouseDownCount++;
+}
+
+@end
 
 static unsigned char *PBPixelAt(NSBitmapImageRep *image, NSInteger x, NSInteger y)
 {
     return [image bitmapData] + (y * [image bytesPerRow]) + (x * [image samplesPerPixel]);
+}
+
+static unsigned char *PBDisplayPixelAt(NSBitmapImageRep *image, NSInteger x, NSInteger y)
+{
+    return PBPixelAt(image, x, [image pixelsHigh] - y - 1);
 }
 
 static void PBSetPixel(NSBitmapImageRep *image, NSInteger x, NSInteger y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
@@ -34,18 +85,26 @@ static void PBSetPixel(NSBitmapImageRep *image, NSInteger x, NSInteger y, unsign
     unsigned char *pixel = PBPixelAt(image, x, y);
     pixel[0] = red;
     pixel[1] = green;
-    pixel[2] = blue;
-    pixel[3] = alpha;
-}
-
-static NSInteger PBBitmapYForDisplayY(NSBitmapImageRep *image, NSInteger y)
-{
-    return [image pixelsHigh] - y - 1;
+	pixel[2] = blue;
+	pixel[3] = alpha;
 }
 
 static void PBSetDisplayPixel(NSBitmapImageRep *image, NSInteger x, NSInteger y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
 {
-    PBSetPixel(image, x, PBBitmapYForDisplayY(image, y), red, green, blue, alpha);
+    unsigned char *pixel = PBDisplayPixelAt(image, x, y);
+    pixel[0] = red;
+    pixel[1] = green;
+    pixel[2] = blue;
+    pixel[3] = alpha;
+}
+
+static void PBFillImage(NSBitmapImageRep *image, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
+{
+    for (NSInteger y = 0; y < [image pixelsHigh]; y++) {
+        for (NSInteger x = 0; x < [image pixelsWide]; x++) {
+            PBSetPixel(image, x, y, red, green, blue, alpha);
+        }
+    }
 }
 
 static void PBAssertPixelEquals(NSBitmapImageRep *image, NSInteger x, NSInteger y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
@@ -59,7 +118,11 @@ static void PBAssertPixelEquals(NSBitmapImageRep *image, NSInteger x, NSInteger 
 
 static void PBAssertDisplayPixelEquals(NSBitmapImageRep *image, NSInteger x, NSInteger y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
 {
-    PBAssertPixelEquals(image, x, PBBitmapYForDisplayY(image, y), red, green, blue, alpha);
+    unsigned char *pixel = PBDisplayPixelAt(image, x, y);
+    XCTAssertEqual(pixel[0], red, @"red channel mismatch at display (%ld, %ld)", (long)x, (long)y);
+    XCTAssertEqual(pixel[1], green, @"green channel mismatch at display (%ld, %ld)", (long)x, (long)y);
+    XCTAssertEqual(pixel[2], blue, @"blue channel mismatch at display (%ld, %ld)", (long)x, (long)y);
+    XCTAssertEqual(pixel[3], alpha, @"alpha channel mismatch at display (%ld, %ld)", (long)x, (long)y);
 }
 
 static NSData *PBCanvasData(SWImageDataSource *dataSource)
@@ -93,44 +156,6 @@ static BOOL PBImageHasOpaquePixelInRect(NSBitmapImageRep *image, NSRect rect)
         }
     }
     return NO;
-}
-
-static NSImage *PBImageWithTransparentCorners(NSSize size)
-{
-    NSImage *image = [[[NSImage alloc] initWithSize:size] autorelease];
-    [image lockFocus];
-    [[NSColor clearColor] setFill];
-    NSRectFillUsingOperation(NSMakeRect(0.0, 0.0, size.width, size.height), NSCompositingOperationClear);
-    [[NSColor blackColor] setFill];
-    NSRectFill(NSMakeRect(8.0, 8.0, size.width - 16.0, size.height - 16.0));
-    [image unlockFocus];
-    return image;
-}
-
-static unsigned char PBImageCornerAlpha(NSImage *image)
-{
-    NSData *data = [image TIFFRepresentation];
-    NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:data];
-    return PBPixelAt(rep, 0, 0)[3];
-}
-
-static NSMutableArray *PBRegisteredTestImages(void)
-{
-    static NSMutableArray *images;
-    if (!images) {
-        images = [[NSMutableArray alloc] init];
-    }
-    return images;
-}
-
-static void PBRegisterTestImageNamed(NSString *name)
-{
-    NSString *path = [[NSBundle bundleForClass:[PaintViewDrawingTest class]] pathForResource:[name stringByDeletingPathExtension]
-                                                                                      ofType:[name pathExtension]];
-    NSImage *image = [[[NSImage alloc] initWithContentsOfFile:path] autorelease];
-    XCTAssertNotNil(image);
-    [image setName:name];
-    [PBRegisteredTestImages() addObject:image];
 }
 
 @interface PBFlippedImageRenderView : NSView
@@ -172,6 +197,29 @@ static void PBRegisterTestImageNamed(NSString *name)
 }
 
 @end
+
+static SWSelectionTool *PBMakeSelectionToolWithBackgroundColor(NSColor *backgroundColor)
+{
+    PBToolboxControllerDouble *controller = [[PBToolboxControllerDouble alloc] init];
+    SWSelectionTool *tool = [[[SWSelectionTool alloc] initWithController:(SWToolboxController *)controller] autorelease];
+    [controller setLineWidth:1];
+    [controller setForegroundColor:[NSColor blackColor]];
+    if (backgroundColor)
+        [controller setBackgroundColor:backgroundColor];
+    [controller setFillStyle:0];
+    [controller setSelectionTransparency:NO];
+    return tool;
+}
+
+static SWSelectionTool *PBMakeSelectionTool(void)
+{
+    return PBMakeSelectionToolWithBackgroundColor([NSColor whiteColor]);
+}
+
+static SWSelectionTool *PBMakeSelectionToolWithoutBackgroundColor(void)
+{
+    return PBMakeSelectionToolWithBackgroundColor(nil);
+}
 
 @interface PBCanvasUndoHost : NSObject
 {
@@ -255,13 +303,6 @@ static void PBRegisterTestImageNamed(NSString *name)
 }
 
 @end
-
-static SWSelectionTool *PBMakeSelectionTool(void)
-{
-    SWSelectionTool *tool = [[[SWSelectionTool alloc] initWithController:nil] autorelease];
-    [tool setBackColor:[NSColor whiteColor]];
-    return tool;
-}
 
 @implementation PaintViewDrawingTest
 
@@ -413,27 +454,386 @@ static SWSelectionTool *PBMakeSelectionTool(void)
     [image release];
 }
 
-- (void)testToolButtonGeneratedStateImagesPreserveTransparentCorners
+- (void)testSelectionMarqueeInvalidRectIsFiniteDuringDrag
 {
-    NSImage *normalImage = PBImageWithTransparentCorners(NSMakeSize(32.0, 32.0));
-    PBRegisterTestImageNamed(@"hoveredsmall.png");
-    PBRegisterTestImageNamed(@"pressedsmall.png");
-    SWButtonCell *cell = [[[SWButtonCell alloc] initTextCell:@""] autorelease];
-    [cell setImage:normalImage];
+    NSBitmapImageRep *mainImage = nil;
+    NSBitmapImageRep *bufferImage = nil;
+    [SWImageTools initImageRep:&mainImage withSize:NSMakeSize(6.0, 6.0)];
+    [SWImageTools initImageRep:&bufferImage withSize:NSMakeSize(6.0, 6.0)];
+    SWSelectionTool *tool = PBMakeSelectionTool();
 
-    [cell generateAltImage];
-    [cell generateHovImage];
-    [cell setIsHovered:YES];
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 3.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DRAGGED];
 
-    NSImage *alternateImage = [cell alternateImage];
-    NSImage *hoveredImage = [cell image];
-    XCTAssertNotNil(alternateImage);
-    XCTAssertNotNil(hoveredImage);
-    if (!alternateImage || !hoveredImage)
-        return;
+    NSRect invalidRect = [tool invalidRect];
+    XCTAssertLessThan(NSMinX(invalidRect), 4.0);
+    XCTAssertLessThan(NSMinY(invalidRect), 4.0);
+    XCTAssertGreaterThan(NSWidth(invalidRect), 0.0);
+    XCTAssertGreaterThan(NSHeight(invalidRect), 0.0);
+    XCTAssertTrue(PBImageHasPixelWithAlpha(bufferImage, 255));
 
-    XCTAssertEqual(PBImageCornerAlpha(alternateImage), 0);
-    XCTAssertEqual(PBImageCornerAlpha(hoveredImage), 0);
+    [mainImage release];
+    [bufferImage release];
+}
+
+- (void)testSelectionMarqueeStartPointIsClampedInsideCanvas
+{
+    NSBitmapImageRep *mainImage = nil;
+    NSBitmapImageRep *bufferImage = nil;
+    [SWImageTools initImageRep:&mainImage withSize:NSMakeSize(6.0, 6.0)];
+    [SWImageTools initImageRep:&bufferImage withSize:NSMakeSize(6.0, 6.0)];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+
+    [tool setSavedPoint:NSMakePoint(-4.0, -2.0)];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 4.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DRAGGED];
+
+    NSRect marqueeRect = [tool clippingRect];
+    XCTAssertEqualWithAccuracy(NSMinX(marqueeRect), 0.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSMinY(marqueeRect), 0.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSWidth(marqueeRect), 3.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSHeight(marqueeRect), 4.0, 0.001);
+
+    [tool performDrawAtPoint:NSMakePoint(3.0, 4.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+
+    NSRect selectionRect = [tool clippingRect];
+    XCTAssertEqualWithAccuracy(NSMinX(selectionRect), 0.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSMinY(selectionRect), 0.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSWidth(selectionRect), 3.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSHeight(selectionRect), 4.0, 0.001);
+
+    [tool tieUpLooseEnds];
+    [mainImage release];
+    [bufferImage release];
+}
+
+- (void)testCenteringClipViewForwardsOffCanvasMouseDownWhenDocumentViewOptsIn
+{
+    SWCenteringClipView *clipView = [[[SWCenteringClipView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 20.0, 20.0)] autorelease];
+    PBOffCanvasMouseViewDouble *documentView = [[[PBOffCanvasMouseViewDouble alloc] initWithFrame:NSMakeRect(0.0, 0.0, 10.0, 10.0)] autorelease];
+    [clipView setDocumentView:documentView];
+    NSEvent *event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown
+                                        location:NSMakePoint(1.0, 1.0)
+                                   modifierFlags:0
+                                       timestamp:0
+                                    windowNumber:0
+                                         context:nil
+                                     eventNumber:0
+                                      clickCount:1
+                                        pressure:1.0];
+
+    [documentView setReceiveOffCanvasMouseEvents:YES];
+    [clipView mouseDown:event];
+    XCTAssertEqual([documentView mouseDownCount], 1);
+
+    [documentView setReceiveOffCanvasMouseEvents:NO];
+    [clipView mouseDown:event];
+    XCTAssertEqual([documentView mouseDownCount], 1);
+}
+
+- (void)testSelectionToolMovesSelectedBitmapOnCommit
+{
+    NSBitmapImageRep *mainImage = nil;
+    NSBitmapImageRep *bufferImage = nil;
+    [SWImageTools initImageRep:&mainImage withSize:NSMakeSize(5.0, 5.0)];
+    [SWImageTools initImageRep:&bufferImage withSize:NSMakeSize(5.0, 5.0)];
+    PBSetDisplayPixel(mainImage, 1, 1, 255, 0, 0, 255);
+    SWSelectionTool *tool = PBMakeSelectionTool();
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(2.0, 2.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(1.0, 1.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 2.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DRAGGED];
+
+    PBAssertDisplayPixelEquals(bufferImage, 3, 2, 255, 0, 0, 255);
+    XCTAssertTrue(NSPointInRect(NSMakePoint(3.0, 2.0), [tool invalidRect]));
+
+    [tool tieUpLooseEnds];
+
+    PBAssertDisplayPixelEquals(mainImage, 1, 1, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 3, 2, 255, 0, 0, 255);
+
+    [mainImage release];
+    [bufferImage release];
+}
+
+- (void)testSelectionToolDragsLiveSelectedBitmapThroughMouseSequence
+{
+    NSBitmapImageRep *mainImage = nil;
+    NSBitmapImageRep *bufferImage = nil;
+    [SWImageTools initImageRep:&mainImage withSize:NSMakeSize(10.0, 10.0)];
+    [SWImageTools initImageRep:&bufferImage withSize:NSMakeSize(10.0, 10.0)];
+    PBSetDisplayPixel(mainImage, 3, 3, 255, 0, 0, 255);
+    PBSetDisplayPixel(mainImage, 4, 3, 0, 255, 0, 255);
+    PBSetDisplayPixel(mainImage, 3, 4, 0, 0, 255, 255);
+    SWSelectionTool *tool = PBMakeSelectionTool();
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(1.0, 1.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(6.0, 6.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DRAGGED];
+    [tool performDrawAtPoint:NSMakePoint(6.0, 6.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+
+    PBAssertDisplayPixelEquals(mainImage, 3, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 4, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 3, 4, 255, 255, 255, 255);
+
+    [tool setSavedPoint:NSMakePoint(3.0, 3.0)];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 3.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(6.0, 4.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DRAGGED];
+
+    PBAssertDisplayPixelEquals(bufferImage, 6, 4, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals(bufferImage, 7, 4, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals(bufferImage, 6, 5, 0, 0, 255, 255);
+
+    [tool performDrawAtPoint:NSMakePoint(6.0, 4.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+
+    PBAssertDisplayPixelEquals(bufferImage, 7, 4, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals(bufferImage, 6, 5, 0, 0, 255, 255);
+
+    [tool tieUpLooseEnds];
+
+    PBAssertDisplayPixelEquals(mainImage, 3, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 4, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 3, 4, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 6, 4, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals(mainImage, 7, 4, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals(mainImage, 6, 5, 0, 0, 255, 255);
+
+    [mainImage release];
+    [bufferImage release];
+}
+
+- (void)testSelectionToolAppliesMouseUpDeltaWhenReleaseIsOutsideSelection
+{
+    NSBitmapImageRep *mainImage = nil;
+    NSBitmapImageRep *bufferImage = nil;
+    [SWImageTools initImageRep:&mainImage withSize:NSMakeSize(10.0, 10.0)];
+    [SWImageTools initImageRep:&bufferImage withSize:NSMakeSize(10.0, 10.0)];
+    PBSetDisplayPixel(mainImage, 3, 3, 255, 0, 0, 255);
+    PBSetDisplayPixel(mainImage, 4, 3, 0, 255, 0, 255);
+    SWSelectionTool *tool = PBMakeSelectionTool();
+
+    [tool setSavedPoint:NSMakePoint(2.0, 2.0)];
+    [tool performDrawAtPoint:NSMakePoint(5.0, 5.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+    [tool setSavedPoint:NSMakePoint(3.0, 3.0)];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 3.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(7.0, 3.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+
+    PBAssertDisplayPixelEquals(bufferImage, 7, 3, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals(bufferImage, 8, 3, 0, 255, 0, 255);
+
+    [tool tieUpLooseEnds];
+
+    PBAssertDisplayPixelEquals(mainImage, 3, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 4, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 7, 3, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals(mainImage, 8, 3, 0, 255, 0, 255);
+
+    [mainImage release];
+    [bufferImage release];
+}
+
+- (void)testSelectionToolMovesDisplayPixelsWithoutVerticalDistortion
+{
+    NSBitmapImageRep *mainImage = nil;
+    NSBitmapImageRep *bufferImage = nil;
+    [SWImageTools initImageRep:&mainImage withSize:NSMakeSize(12.0, 12.0)];
+    [SWImageTools initImageRep:&bufferImage withSize:NSMakeSize(12.0, 12.0)];
+    PBSetDisplayPixel(mainImage, 3, 3, 255, 0, 0, 255);
+    PBSetDisplayPixel(mainImage, 4, 4, 0, 255, 0, 255);
+    PBSetDisplayPixel(mainImage, 5, 5, 0, 0, 255, 255);
+    SWSelectionTool *tool = PBMakeSelectionTool();
+
+    [tool setSavedPoint:NSMakePoint(2.0, 2.0)];
+    [tool performDrawAtPoint:NSMakePoint(7.0, 7.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+    [tool setSavedPoint:NSMakePoint(3.0, 3.0)];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 3.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 7.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DRAGGED];
+
+    PBAssertDisplayPixelEquals(bufferImage, 3, 7, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals(bufferImage, 4, 8, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals(bufferImage, 5, 9, 0, 0, 255, 255);
+
+    [tool tieUpLooseEnds];
+
+    PBAssertDisplayPixelEquals(mainImage, 3, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 4, 4, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 5, 5, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 3, 7, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals(mainImage, 4, 8, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals(mainImage, 5, 9, 0, 0, 255, 255);
+
+    [mainImage release];
+    [bufferImage release];
+}
+
+- (void)testSelectionToolUndoRestoresMovedSelection
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(10.0, 10.0)] autorelease];
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    NSBitmapImageRep *mainImage = [dataSource mainImage];
+    NSBitmapImageRep *bufferImage = [dataSource bufferImage];
+    PBFillImage(mainImage, 255, 255, 255, 255);
+    PBSetDisplayPixel(mainImage, 3, 3, 255, 0, 0, 255);
+    PBSetDisplayPixel(mainImage, 4, 3, 0, 255, 0, 255);
+    PBSetDisplayPixel(mainImage, 3, 4, 0, 0, 255, 255);
+    SWSelectionTool *tool = PBMakeSelectionTool();
+    [tool setDocument:(SWDocument *)undoHost];
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(6.0, 6.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+    [tool setSavedPoint:NSMakePoint(3.0, 3.0)];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 3.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(6.0, 4.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DRAGGED];
+    [tool tieUpLooseEnds];
+
+    PBAssertDisplayPixelEquals([dataSource mainImage], 3, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 4, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 3, 4, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 6, 4, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 7, 4, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 6, 5, 0, 0, 255, 255);
+
+    [[undoHost undoManager] undo];
+
+    PBAssertDisplayPixelEquals([dataSource mainImage], 3, 3, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 4, 3, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 3, 4, 0, 0, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 6, 4, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 7, 4, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 6, 5, 255, 255, 255, 255);
+
+    [[undoHost undoManager] redo];
+
+    PBAssertDisplayPixelEquals([dataSource mainImage], 3, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 4, 3, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 3, 4, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 6, 4, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 7, 4, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 6, 5, 0, 0, 255, 255);
+}
+
+- (void)testSelectionToolCanDiscardLiveSelectionBeforeCanvasRestore
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(8.0, 8.0)] autorelease];
+    NSBitmapImageRep *originalBufferImage = [dataSource bufferImage];
+    PBSetDisplayPixel([dataSource mainImage], 3, 3, 255, 0, 0, 255);
+    SWCanvasHistorySnapshot *snapshot = [dataSource canvasHistorySnapshot];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(5.0, 5.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_UP];
+    [tool setSavedPoint:NSMakePoint(3.0, 3.0)];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 3.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_DOWN];
+
+    [tool discardSelection];
+    [dataSource restoreCanvasHistorySnapshot:snapshot];
+    XCTAssertNotEqual(originalBufferImage, [dataSource bufferImage]);
+
+    [tool tieUpLooseEnds];
+    PBAssertDisplayPixelEquals([dataSource mainImage], 3, 3, 255, 0, 0, 255);
+}
+
+- (void)testSelectionToolClearsOriginalPixelsWhenBackgroundColorIsMissing
+{
+    NSBitmapImageRep *mainImage = nil;
+    NSBitmapImageRep *bufferImage = nil;
+    [SWImageTools initImageRep:&mainImage withSize:NSMakeSize(5.0, 5.0)];
+    [SWImageTools initImageRep:&bufferImage withSize:NSMakeSize(5.0, 5.0)];
+    PBSetDisplayPixel(mainImage, 1, 1, 255, 0, 0, 255);
+    PBSetDisplayPixel(mainImage, 2, 1, 255, 0, 0, 255);
+    SWSelectionTool *tool = PBMakeSelectionToolWithoutBackgroundColor();
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 2.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_UP];
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(1.0, 1.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(3.0, 2.0)
+               withMainImage:mainImage
+                 bufferImage:bufferImage
+                  mouseEvent:MOUSE_DRAGGED];
+
+    PBAssertDisplayPixelEquals(mainImage, 1, 1, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals(mainImage, 2, 1, 255, 255, 255, 255);
+
+    [mainImage release];
+    [bufferImage release];
 }
 
 - (void)testConvertFileTypeMapsSavePanelLabelsToExtensions

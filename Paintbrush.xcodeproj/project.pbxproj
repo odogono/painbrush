@@ -12,6 +12,8 @@
 		2706B88110ED719500080D4A /* SWButtonCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 278FC09E0E478024006065E6 /* SWButtonCell.m */; };
 		2706B88210ED719500080D4A /* pressedsmall.png in Resources */ = {isa = PBXBuildFile; fileRef = 278FC0E50E47845E006065E6 /* pressedsmall.png */; };
 		2706B88310ED719500080D4A /* hoveredsmall.png in Resources */ = {isa = PBXBuildFile; fileRef = 27F537CF0E917CA4001FA420 /* hoveredsmall.png */; };
+		2706B88410ED719500080D4A /* SWButtonCellTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B81110ED6FE400080D4A /* SWButtonCellTest.m */; };
+		2706B88510ED719500080D4A /* SWCenteringClipView.m in Sources */ = {isa = PBXBuildFile; fileRef = 274194B20C1DA5E400605CDC /* SWCenteringClipView.m */; };
 		41C0400D8BE04E648080A101 /* SWSelectionTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400C8BE04E648080A101 /* SWSelectionTest.swift */; };
 		41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
 		41C0400F8BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
@@ -261,6 +263,7 @@
 		2704064A0BFE3F3600C308C8 /* ToDo.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = "Paintbrush/Resources/Documents/ToDo.rtf"; sourceTree = "<group>"; };
 		2706B80F10ED6FE400080D4A /* PaintViewDrawingTest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "PaintbrushTests/Sources/PaintViewDrawingTest.h"; sourceTree = "<group>"; };
 		2706B81010ED6FE400080D4A /* PaintViewDrawingTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "PaintbrushTests/Sources/PaintViewDrawingTest.m"; sourceTree = "<group>"; };
+		2706B81110ED6FE400080D4A /* SWButtonCellTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "PaintbrushTests/Sources/SWButtonCellTest.m"; sourceTree = "<group>"; };
 		2706B83910ED702F00080D4A /* Test.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Test.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2706B83A10ED702F00080D4A /* Test-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PaintbrushTests/Supporting Files/Test-Info.plist"; sourceTree = "<group>"; };
 		E9B20F4903526FC08A9AD2E2 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
@@ -487,6 +490,7 @@
 			children = (
 				2706B80F10ED6FE400080D4A /* PaintViewDrawingTest.h */,
 				2706B81010ED6FE400080D4A /* PaintViewDrawingTest.m */,
+				2706B81110ED6FE400080D4A /* SWButtonCellTest.m */,
 				41C0400C8BE04E648080A101 /* SWSelectionTest.swift */,
 			);
 			name = Tests;
@@ -1044,6 +1048,7 @@
 			files = (
 				2706B88010ED719500080D4A /* PaintViewDrawingTest.m in Sources */,
 				2706B88110ED719500080D4A /* SWButtonCell.m in Sources */,
+				2706B88410ED719500080D4A /* SWButtonCellTest.m in Sources */,
 				41C0400D8BE04E648080A101 /* SWSelectionTest.swift in Sources */,
 				2706B94D10ED77A600080D4A /* DebugLog.m in Sources */,
 				41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */,
@@ -1051,6 +1056,7 @@
 				41C040128BE04E648080A101 /* SWTool.m in Sources */,
 				41C040138BE04E648080A101 /* SWBrushTool.m in Sources */,
 				41C040148BE04E648080A101 /* SWSelectionTool.m in Sources */,
+				2706B88510ED719500080D4A /* SWCenteringClipView.m in Sources */,
 				AFFB5C3C4AECD04504765B97 /* SWImageTools.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

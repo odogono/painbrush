@@ -22,6 +22,21 @@
 
 @implementation SWSlider
 
+- (void)setScrolledLineWidthDisplay:(NSInteger)lineWidthDisplay
+{
+	[self setIntegerValue:lineWidthDisplay];
+
+	NSDictionary *bindingInfo = [self infoForBinding:NSValueBinding];
+	id observedObject = [bindingInfo objectForKey:NSObservedObjectKey];
+	NSString *observedKeyPath = [bindingInfo objectForKey:NSObservedKeyPathKey];
+	if (observedObject && observedKeyPath) {
+		[observedObject setValue:[NSNumber numberWithInteger:lineWidthDisplay]
+					  forKeyPath:observedKeyPath];
+	} else {
+		[[SWToolboxState sharedToolboxState] setLineWidthDisplay:lineWidthDisplay];
+	}
+}
+
 // We override this method of NSResponder so that when the user scrolls while hovering
 // over the scroller, the value changes. This works for both X and Y scrolling, though
 // any deltaX will be given higher precedence. This results in a smooth and natural
@@ -45,7 +60,7 @@
 		
 		// Notify the toolbox controller that we've moved the slider through
 		// an alternate channel
-		[[SWToolboxState sharedToolboxState] setLineWidthDisplay:newValue2];
+		[self setScrolledLineWidthDisplay:newValue2];
 	}
 }
 

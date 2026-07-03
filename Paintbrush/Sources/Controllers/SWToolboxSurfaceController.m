@@ -194,6 +194,25 @@ static NSString * const SWToolboxSurfaceBoundStateKeys[] = { @"foregroundColor",
 
 @synthesize toolboxState;
 
+- (NSView *)toolboxSurfaceView
+{
+	if (!toolboxSurfaceView)
+		toolboxSurfaceView = [[[self window] contentView] retain];
+	return toolboxSurfaceView;
+}
+
+- (NSView *)detachedToolboxViewForEmbedding
+{
+	NSView *surfaceView = [[self toolboxSurfaceView] retain];
+	if ([[self window] contentView] == surfaceView) {
+		NSView *emptyView = [[[NSView alloc] initWithFrame:[surfaceView frame]] autorelease];
+		[[self window] setContentView:emptyView];
+	}
+	embeddedSurface = YES;
+	[[self window] orderOut:nil];
+	return [surfaceView autorelease];
+}
+
 - (id)initWithWindowNibName:(NSString *)windowNibName
 {
 	return [self initWithToolboxState:[SWToolboxState sharedToolboxState]
@@ -316,7 +335,7 @@ static NSString * const SWToolboxSurfaceBoundStateKeys[] = { @"foregroundColor",
 	if (originalContentHeight > 0.0)
 		return;
 
-	originalContentHeight = NSHeight([[[self window] contentView] bounds]);
+	originalContentHeight = NSHeight([[self toolboxSurfaceView] bounds]);
 	originalToolMatrixFrame = [toolMatrix frame];
 	originalTransparencyMatrixFrame = [transparencyMatrix frame];
 	originalFillMatrixFrame = [fillMatrix frame];
@@ -327,7 +346,7 @@ static NSString * const SWToolboxSurfaceBoundStateKeys[] = { @"foregroundColor",
 	if (originalContentHeight <= 0.0)
 		return;
 
-	CGFloat yDelta = NSHeight([[[self window] contentView] bounds]) - originalContentHeight;
+	CGFloat yDelta = NSHeight([[self toolboxSurfaceView] bounds]) - originalContentHeight;
 	[toolMatrix setFrame:NSOffsetRect(originalToolMatrixFrame, 0.0, yDelta)];
 	[transparencyMatrix setFrame:NSOffsetRect(originalTransparencyMatrixFrame, 0.0, yDelta)];
 	[fillMatrix setFrame:NSOffsetRect(originalFillMatrixFrame, 0.0, yDelta)];
@@ -336,7 +355,7 @@ static NSString * const SWToolboxSurfaceBoundStateKeys[] = { @"foregroundColor",
 
 - (void)installToolboxVisualOverlay
 {
-	NSView *contentView = [[self window] contentView];
+	NSView *contentView = [self toolboxSurfaceView];
 	if (toolboxVisualOverlay || !contentView)
 		return;
 
@@ -386,15 +405,15 @@ static NSString * const SWToolboxSurfaceBoundStateKeys[] = { @"foregroundColor",
 	[fillMatrix setHidden:(![tempTool shouldShowFillOptions])];
 	[transparencyMatrix setHidden:(![tempTool shouldShowTransparencyOptions])];
 
-	NSRect aRect = [[super window] frame];
-	if ([tempTool shouldShowFillOptions] || [tempTool shouldShowTransparencyOptions]) {
-		aRect.origin.y += (aRect.size.height - LARGE_HEIGHT);
-		aRect.size.height = LARGE_HEIGHT;
-	} else {
-		aRect.origin.y += (aRect.size.height - SMALL_HEIGHT);
-		aRect.size.height = SMALL_HEIGHT;
+	// An embedded surface has no window of its own to resize; it just re-pins
+	// its matrices to the top of whatever view is hosting it.
+	if (!embeddedSurface) {
+		CGFloat height = ([tempTool shouldShowFillOptions] || [tempTool shouldShowTransparencyOptions]) ? LARGE_HEIGHT : SMALL_HEIGHT;
+		NSRect aRect = [[super window] frame];
+		aRect.origin.y += (aRect.size.height - height);
+		aRect.size.height = height;
+		[[super window] setFrame:aRect display:YES animate:NO];
 	}
-	[[super window] setFrame:aRect display:YES animate:NO];
 	[self pinToolboxMatricesToTop];
 }
 
@@ -493,6 +512,7 @@ static NSString * const SWToolboxSurfaceBoundStateKeys[] = { @"foregroundColor",
 	}
 	[toolboxVisualOverlay removeFromSuperview];
 	[toolboxVisualOverlay release];
+	[toolboxSurfaceView release];
 	[toolbox release];
 	[toolboxState release];
 	[super dealloc];

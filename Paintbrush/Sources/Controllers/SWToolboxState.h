@@ -38,7 +38,9 @@ extern NSString * const SWToolboxVisualStateChangedNotification;
 	BOOL selectionTransparency;
 }
 
-+ (id)sharedToolboxState;
++ (SWToolboxState *)sharedToolboxState;
+- (id)initWithToolboxState:(SWToolboxState *)state;
+- (void)copyValuesFromToolboxState:(SWToolboxState *)state;
 - (void)updateInfo;
 
 @property (assign) NSInteger lineWidthDisplay;

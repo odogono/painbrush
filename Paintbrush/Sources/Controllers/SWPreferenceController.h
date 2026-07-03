@@ -26,12 +26,14 @@
 	
 	IBOutlet NSView *generalPrefsView;
 	IBOutlet NSView *advancedPrefsView;
+	NSButton *dockToolboxButton;
 	
 	int currentViewTag;
 }
 
 - (IBAction)changeFileType:(id)sender;
 - (IBAction)changeUndoLimit:(id)sender;
+- (IBAction)changeDockedToolboxMode:(id)sender;
 
 - (IBAction)selectPrefPane:(id)sender;
 

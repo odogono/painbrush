@@ -27,6 +27,7 @@
 @implementation SWToolbox
 
 @synthesize currentTool;
+@synthesize toolboxState;
 
 - (id)initWithDocument:(SWDocument *)doc
 {
@@ -37,6 +38,7 @@
 {
 	self = [super init];
 	
+	document = doc;
 	toolboxState = [state retain];
 	
 	// Create the dictionary
@@ -83,9 +85,12 @@
 	currentTool = tool;
     
     
-    SWToolboxController *controller = [SWToolboxController sharedToolboxPanelController];
-    SWDocument *document = [controller activeDocument];
-    SWPaintView *view = [document paintView];
+    SWDocument *cursorDocument = document;
+    if (!cursorDocument) {
+        SWToolboxController *controller = [SWToolboxController sharedToolboxPanelController];
+        cursorDocument = [controller activeDocument];
+    }
+    SWPaintView *view = [cursorDocument paintView];
     [view cursorUpdate:nil];
     
 }

@@ -1,3 +1,5 @@
 # Toolbox surfaces share state
 
-Paintbrush supports multiple Toolbox surfaces backed by one app-wide Toolbox state, so the existing floating panel and any future embedded document-window surface show and edit the same active tool, stroke, fill, transparency, and color choices. This preserves the current cross-document drawing behavior while removing the floating panel window controller as the logical owner of Toolbox state; per-document Toolbox state is intentionally left for a separate behavior-changing decision.
+Paintbrush keeps `SWToolboxState` separate from Toolbox window-controller ownership so multiple Toolbox surfaces can be backed by an explicit state object. The floating Toolbox uses the app-wide shared Toolbox state, preserving the long-standing cross-document behavior when the Toolbox is a floating panel.
+
+Docked document-window Toolbox surfaces are the exception recorded in ADR-0004: they use a document-owned Toolbox state for the current window session. Per-document docked state is not written into image files.

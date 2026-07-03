@@ -23,11 +23,21 @@
 @class SWToolboxController;
 
 extern NSString * const kSWUndoKey;
+extern NSString * const kSWDockToolboxInDocumentWindowsKey;
+extern NSString * const kSWDockedToolboxPreferenceChangedNotification;
+extern NSString * const kSWDockedToolboxVisibilityChangedNotification;
 
 @interface SWAppController : NSObject
 {
 	SWPreferenceController *preferenceController;
 }
++ (void)registerDefaultPreferences;
++ (BOOL)dockedToolboxModeEnabled;
++ (void)setDockedToolboxModeEnabled:(BOOL)enabled;
++ (BOOL)dockedToolboxVisible;
++ (void)setDockedToolboxVisible:(BOOL)visible;
++ (void)applyToolboxHostingPreferenceChanged;
+
 - (IBAction)showPreferencePanel:(id)sender;
 - (IBAction)showToolboxPanel:(id)sender;
 //- (IBAction)showGridPanel:(id)sender;

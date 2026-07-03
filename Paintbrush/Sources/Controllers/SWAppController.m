@@ -28,9 +28,109 @@
 #endif // APPSTORE
 
 NSString * const kSWUndoKey = @"UndoLevels";
+NSString * const kSWDockToolboxInDocumentWindowsKey = @"DockToolboxInDocumentWindows";
+NSString * const kSWDockedToolboxPreferenceChangedNotification = @"SWDockedToolboxPreferenceChanged";
+NSString * const kSWDockedToolboxVisibilityChangedNotification = @"SWDockedToolboxVisibilityChanged";
+
+static BOOL kSWDockedToolboxVisible = YES;
 
 @implementation SWAppController
 
++ (void)registerDefaultPreferences
+{
+	NSMutableDictionary *defaultValues = [NSMutableDictionary dictionary];
+	[defaultValues setObject:[NSNumber numberWithInt:640] forKey:@"HorizontalSize"];
+	[defaultValues setObject:[NSNumber numberWithInt:480] forKey:@"VerticalSize"];
+	[defaultValues setObject:[NSNumber numberWithInt:10] forKey:kSWUndoKey];
+	[defaultValues setObject:@"PNG" forKey:@"FileType"];
+	[defaultValues setObject:[NSNumber numberWithBool:NO] forKey:kSWDockToolboxInDocumentWindowsKey];
+	[[NSUserDefaults standardUserDefaults] registerDefaults:defaultValues];
+}
+
++ (BOOL)dockedToolboxModeEnabled
+{
+	return [[NSUserDefaults standardUserDefaults] boolForKey:kSWDockToolboxInDocumentWindowsKey];
+}
+
++ (NSArray *)paintbrushDocuments
+{
+	NSMutableArray *documents = [NSMutableArray array];
+	for (id document in [[NSDocumentController sharedDocumentController] documents]) {
+		if ([document isKindOfClass:[SWDocument class]])
+			[documents addObject:document];
+	}
+	return documents;
+}
+
++ (SWDocument *)activePaintbrushDocument
+{
+	NSWindow *keyWindow = [NSApp keyWindow];
+	id document = keyWindow ? [[NSDocumentController sharedDocumentController] documentForWindow:keyWindow] : nil;
+	if ([document isKindOfClass:[SWDocument class]])
+		return document;
+
+	document = [[SWToolboxController sharedToolboxPanelController] activeDocument];
+	if ([document isKindOfClass:[SWDocument class]])
+		return document;
+
+	return [[self paintbrushDocuments] lastObject];
+}
+
++ (void)applyToolboxHostingTransitionFromDockedMode:(BOOL)wasDocked toDockedMode:(BOOL)isDocked
+{
+	if (!wasDocked && isDocked) {
+		for (SWDocument *document in [self paintbrushDocuments])
+			[document copySharedToolboxStateIntoDocumentState];
+	} else if (wasDocked && !isDocked) {
+		SWDocument *document = [self activePaintbrushDocument];
+		[document copyDocumentToolboxStateIntoSharedState];
+	}
+
+	for (SWDocument *document in [self paintbrushDocuments])
+		[document useCurrentToolboxHostingState];
+}
+
++ (void)setDockedToolboxModeEnabled:(BOOL)enabled
+{
+	BOOL wasDocked = [self dockedToolboxModeEnabled];
+	if (wasDocked == enabled)
+		return;
+
+	[[NSUserDefaults standardUserDefaults] setBool:enabled
+											forKey:kSWDockToolboxInDocumentWindowsKey];
+
+	[self applyToolboxHostingTransitionFromDockedMode:wasDocked toDockedMode:enabled];
+	[self applyToolboxHostingPreferenceChanged];
+}
+
++ (BOOL)dockedToolboxVisible
+{
+	return kSWDockedToolboxVisible;
+}
+
++ (void)setDockedToolboxVisible:(BOOL)visible
+{
+	if (kSWDockedToolboxVisible == visible)
+		return;
+
+	kSWDockedToolboxVisible = visible;
+	[[NSNotificationCenter defaultCenter] postNotificationName:kSWDockedToolboxVisibilityChangedNotification
+														object:self];
+}
+
++ (void)applyToolboxHostingPreferenceChanged
+{
+	BOOL isDocked = [self dockedToolboxModeEnabled];
+	SWToolboxController *toolboxPanel = [SWToolboxController sharedToolboxPanelController];
+	if (isDocked) {
+		[toolboxPanel close];
+	} else {
+		[toolboxPanel showWindow:self];
+	}
+
+	[[NSNotificationCenter defaultCenter] postNotificationName:kSWDockedToolboxPreferenceChangedNotification
+														object:self];
+}
 
 - (id)init
 {
@@ -49,21 +149,12 @@ NSString * const kSWUndoKey = @"UndoLevels";
 		
 	} else if (self = [super init]) {
 		
-		// Create a dictionary
-		NSMutableDictionary *defaultValues = [NSMutableDictionary dictionary];
-		
-		// Put initial defaults in the dictionary
-		[defaultValues setObject:[NSNumber numberWithInt:640] forKey:@"HorizontalSize"];
-		[defaultValues setObject:[NSNumber numberWithInt:480] forKey:@"VerticalSize"];
-		[defaultValues setObject:[NSNumber numberWithInt:10] forKey:kSWUndoKey];
-		[defaultValues setObject:@"PNG" forKey:@"FileType"];
-		
-		// Register the dictionary of defaults
-		[[NSUserDefaults standardUserDefaults] registerDefaults:defaultValues];		
+		[SWAppController registerDefaultPreferences];
 
 		[[NSColorPanel sharedColorPanel] setShowsAlpha:YES];
 		[NSColorPanel setPickerMode:NSCrayonModeColorPanel];
-		[[SWToolboxController sharedToolboxPanelController] showWindow:self];
+		if (![SWAppController dockedToolboxModeEnabled])
+			[[SWToolboxController sharedToolboxPanelController] showWindow:self];
 	}
 	
 	return self;
@@ -90,6 +181,11 @@ NSString * const kSWUndoKey = @"UndoLevels";
 // Makes the toolbox panel appear and disappear
 - (IBAction)showToolboxPanel:(id)sender
 {
+	if ([SWAppController dockedToolboxModeEnabled]) {
+		[SWAppController setDockedToolboxVisible:![SWAppController dockedToolboxVisible]];
+		return;
+	}
+
 	SWToolboxController *toolboxPanel = [SWToolboxController sharedToolboxPanelController];
 	if ([[toolboxPanel window] isVisible]) {
 		[toolboxPanel close];
@@ -149,6 +245,14 @@ NSString * const kSWUndoKey = @"UndoLevels";
 	SEL action = [menuItem action];
 	if (action == @selector(newFromClipboard:)) {
 		return ([SWImageTools readImageFromPasteboard:[NSPasteboard generalPasteboard]] != nil);
+	}
+	if (action == @selector(showToolboxPanel:)) {
+		if ([SWAppController dockedToolboxModeEnabled]) {
+			[menuItem setState:([SWAppController dockedToolboxVisible] ? NSOnState : NSOffState)];
+		} else {
+			NSWindow *toolboxWindow = [[SWToolboxController sharedToolboxPanelController] window];
+			[menuItem setState:([toolboxWindow isVisible] ? NSOnState : NSOffState)];
+		}
 	}
 	return YES;
 }

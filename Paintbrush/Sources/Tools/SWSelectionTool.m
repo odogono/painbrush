@@ -96,7 +96,7 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 		return backColor;
 
 	if ([toolboxState respondsToSelector:@selector(backgroundColor)]) {
-		NSColor *color = [toolboxState backgroundColor];
+		NSColor *color = [(SWToolboxState *)toolboxState backgroundColor];
 		if ([color isKindOfClass:[NSColor class]])
 			return color;
 	}

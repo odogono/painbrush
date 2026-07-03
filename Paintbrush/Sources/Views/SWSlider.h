@@ -27,4 +27,6 @@
 	CGFloat savedScroll;
 }
 
+- (void)setScrolledLineWidthDisplay:(NSInteger)lineWidthDisplay;
+
 @end

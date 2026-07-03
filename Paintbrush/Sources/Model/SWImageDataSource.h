@@ -46,6 +46,8 @@
 
 // Initializers
 - (id)initWithSize:(NSSize)size;
+- (id)initWithSize:(NSSize)size
+   backgroundColor:(NSColor *)backgroundColor;
 - (id)initWithURL:(NSURL *)url;
 - (id)initWithPasteboard;
 

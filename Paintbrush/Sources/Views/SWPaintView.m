@@ -67,6 +67,18 @@
 	[self setNeedsDisplay:YES];	
 }
 
+- (void)setToolbox:(SWToolbox *)tb
+{
+	if (toolbox == tb)
+		return;
+
+	[tb retain];
+	[toolbox release];
+	toolbox = tb;
+	[self cursorUpdate:nil];
+	[self setNeedsDisplay:YES];
+}
+
 
 - (void)dealloc
 {

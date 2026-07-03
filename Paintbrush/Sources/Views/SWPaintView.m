@@ -131,7 +131,10 @@
 		
 		// Draw the NSBitmapImageRep to the view
 		if (mainImage) 
-			CGContextDrawImage(cgContext, NSRectToCGRect([self bounds]), [mainImage CGImage]);
+		{
+			NSRect mainImageRect = (NSRect){ NSZeroPoint, [mainImage size] };
+			CGContextDrawImage(cgContext, NSRectToCGRect(mainImageRect), [mainImage CGImage]);
+		}
 		
 		// If there's an overlay image being used at the moment, draw it
 		if (bufferImage) 
@@ -346,19 +349,36 @@
 // Handles keyboard events
 - (void)keyDown:(NSEvent *)event
 {
-	// Escape key
-	if ([event keyCode] == 53) 
+	// Escape key -- cancel the selection (discard, restoring any lifted Canvas pixels)
+	if ([event keyCode] == 53)
 	{
 		isPayingAttention = NO;
-		[toolbox tieUpLooseEndsForCurrentTool];
-		[SWImageTools clearImage:[dataSource bufferImage]];
+		if ([[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+			// cancelSelection resets the selection extent itself
+			[(SWSelectionTool *)[toolbox currentTool] cancelSelection];
+		else
+		{
+			[toolbox tieUpLooseEndsForCurrentTool];
+			[document resetSelectionExtent];
+		}
 		[self setNeedsDisplay:YES];
-	} 
-	else if ([event keyCode] == 51 || [event keyCode] == 117) 
+	}
+	// Return / Enter -- commit the active selection to the Canvas
+	else if ([event keyCode] == 36 || [event keyCode] == 76)
+	{
+		if ([[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+		{
+			[toolbox tieUpLooseEndsForCurrentTool];
+			[self setNeedsDisplay:YES];
+		}
+		else
+			[[[toolboxController window] contentView] keyDown:event];
+	}
+	else if ([event keyCode] == 51 || [event keyCode] == 117)
 	{
 		// Delete keys (back and forward)
 		[self clearOverlay];
-	} 
+	}
 	else
 	{
 		[[[toolboxController window] contentView] keyDown:event];
@@ -472,6 +492,7 @@
 	[SWImageTools clearImage:[dataSource bufferImage]];
 	[[toolbox currentTool] deleteKey];
 	[toolbox tieUpLooseEndsForCurrentTool];
+	[document resetSelectionExtent];
 	[self setNeedsDisplay:YES];
 }
 

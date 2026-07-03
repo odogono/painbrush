@@ -20,9 +20,19 @@
 #import "SWSelectionTool.h"
 #import "SWToolboxController.h"
 #import "SWDocument.h"
+#if __has_include("Paintbrush-Swift.h")
 #import "Paintbrush-Swift.h"
+#else
+#import "Test-Swift.h"
+#endif
 
 @implementation SWSelectionTool
+
+- (void)updateSelectionExtent
+{
+	if (selection && document)
+		_bufferImage = [document updateSelectionExtentForSelectionRect:[self clippingRect]];
+}
 
 - (id)initWithController:(SWToolboxController *)controller;
 {
@@ -34,6 +44,7 @@
 		dottedLineOffset = 0;
 		dottedLineArray[0] = 5.0;
 		dottedLineArray[1] = 3.0;
+		marqueeRect = NSZeroRect;
 	}
 	return self;
 }
@@ -112,6 +123,7 @@
 			// Do the moving thing
 			[SWImageTools clearImage:bufferImage];
 			[selection moveByDeltaX:deltaX y:deltaY];
+			[self updateSelectionExtent];
 
 			// The clipping rect is the new redraw rect
 			[super addRectToRedrawRect:[self clippingRect]];
@@ -125,6 +137,7 @@
 	else
 	{
 		[SWImageTools clearImage:bufferImage];
+		marqueeRect = NSZeroRect;
 		
 		// Taking care of the outer bounds of the image
 		if (point.x < 0)
@@ -143,18 +156,25 @@
 			[super addRedrawRectFromPoint:savedPoint toPoint:point];
 			
 			NSRect rect = NSMakeRect(fmin(savedPoint.x, point.x), fmin(savedPoint.y, point.y),
-									 abs(point.x - savedPoint.x), abs(point.y - savedPoint.y));
+									 fabs(point.x - savedPoint.x), fabs(point.y - savedPoint.y));
 
 			// A straight horizontal/vertical drag yields a zero-area rect that still
 			// differs from savedPoint; creating a 0-sized selection would crash.
-			if (event == MOUSE_UP && rect.size.width >= 1.0 && rect.size.height >= 1.0)
+			if (rect.size.width >= 1.0 && rect.size.height >= 1.0)
 			{
-				[SWImageTools clearImage:bufferImage];
-				[selection release];
-				selection = [[SWSelection alloc] initWithCanvasImage:mainImage
-																rect:rect
-													 backgroundColor:backColor
-													  omitBackground:shouldOmitBackground];
+				if (event == MOUSE_UP)
+				{
+					[SWImageTools clearImage:bufferImage];
+					[selection release];
+					selection = [[SWSelection alloc] initWithCanvasImage:mainImage
+																	rect:rect
+														 backgroundColor:backColor
+														  omitBackground:shouldOmitBackground];
+					marqueeRect = NSZeroRect;
+					[self updateSelectionExtent];
+				}
+				else
+					marqueeRect = rect;
 			}
 			
 			// Finally, draw the image and the selection
@@ -196,7 +216,41 @@
 
 - (void)deleteKey
 {
+	// NB: don't reset the selection extent here. deleteKey is only reached via
+	// -[SWPaintView clearOverlay], which resets the extent itself (both directly
+	// and through tieUpLooseEnds). Resizing the buffer here would free the rep
+	// that tieUpLooseEnds still clears via _bufferImage -> use-after-free.
 	[selection clearSelectedImage];
+}
+
+- (void)cancelSelection
+{
+	// Escape cancels the selection. A Canvas-sourced selection filled its source
+	// rect with the background color when it was created (lifting those pixels),
+	// so restore them; a pasted selection has nothing on the Canvas to restore.
+	if (selection && [selection hasOriginalCanvasImage])
+		[selection restoreOriginalCanvasToImage:_mainImage];
+	[self discardSelection];
+}
+
+- (void)discardSelection
+{
+	if (animationTimer)
+	{
+		[animationTimer invalidate];
+		animationTimer = nil;
+	}
+
+	if (_bufferImage)
+		[SWImageTools clearImage:_bufferImage];
+
+	[selection release];
+	selection = nil;
+	marqueeRect = NSZeroRect;
+	[document resetSelectionExtent];
+	[super resetRedrawRect];
+	_bufferImage = nil;
+	_mainImage = nil;
 }
 
 
@@ -254,10 +308,12 @@
 		[SWImageTools clearImage:_bufferImage];
 		_bufferImage = nil;
 	}
+	[document resetSelectionExtent];
 	
 	// Get rid of references to the selected image
 	[selection release];
 	selection = nil;
+	marqueeRect = NSZeroRect;
 	
 	// Clean up after ourselves
 	[mainImageCopy release];
@@ -268,6 +324,8 @@
 {
 	if (selection)
 		return [selection clippingRect];
+	if (!NSEqualRects(marqueeRect, NSZeroRect))
+		return marqueeRect;
 	return NSZeroRect;
 }
 
@@ -284,6 +342,7 @@
 												 origin:rect.origin
 										backgroundColor:backColor
 										 omitBackground:shouldOmitBackground];
+	[self updateSelectionExtent];
 
 	// Which one should we be using?  Let this method decide
 	[self updateBackgroundOmission];

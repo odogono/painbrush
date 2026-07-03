@@ -32,6 +32,7 @@
 @class SWSavePanelAccessoryViewController;
 @class SWImageDataSource;
 @class SWCanvasHistorySnapshot;
+@class NSBitmapImageRep;
 
 @interface SWDocument : NSDocument
 {
@@ -88,6 +89,8 @@
 - (void)registerCanvasResizeUndo;
 - (void)restoreCanvasHistorySnapshot:(SWCanvasHistorySnapshot *)snapshot
 						   actionName:(NSString *)actionName;
+- (NSBitmapImageRep *)updateSelectionExtentForSelectionRect:(NSRect)selectionRect;
+- (void)resetSelectionExtent;
 
 // For copy-and-paste
 - (void)writeImageToPasteboard:(NSPasteboard *)pb;

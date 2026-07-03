@@ -5,6 +5,7 @@
 - Replaced the legacy `Test` `.octest`/`SenTestingKit` target with a modern XCTest bundle and shared `Test` scheme.
 - Added focused bitmap regression coverage for `SWImageTools` creation, clearing, drawing, flipping, cropping, transparency stripping, and file-type mapping.
 - Extracted selection bitmap lifecycle into the Swift `SWSelection` model with regression coverage for canvas selections, pasted selections, movement, commit, copy, clear, and background omission.
+- Made oversized pasted images remain usable as live Selections clipped to the Canvas extent without resizing the Canvas, with regression coverage for orientation, move, copy, cancel, and clipped commit behavior.
 - Moved Canvas undo snapshots into `SWImageDataSource` with regression coverage for drawing and resize undo/redo.
 - Updated the `Paintbrush-AppStore` target to build with the modern macOS SDK settings while preserving the `APPSTORE` variant behavior.
 - Added `CONTEXT.md` with the canonical `Canvas` glossary term for the user-editable bitmap surface.

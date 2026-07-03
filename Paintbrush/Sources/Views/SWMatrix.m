@@ -19,6 +19,7 @@
 
 #import "SWMatrix.h"
 #import "SWButtonCell.h"
+#import "SWToolboxController.h"
 
 @implementation SWMatrix
 
@@ -44,6 +45,7 @@
 	[hoveredCell setIsHovered:NO];
 	hoveredPoint = NSMakePoint(-1,-1);
 	hoveredCell = nil;
+	[[NSNotificationCenter defaultCenter] postNotificationName:SWToolboxVisualStateChangedNotification object:self];
 }
 
 // When the mouse moves, make sure the correct button is hovered
@@ -64,8 +66,21 @@
 		[hoveredCell setIsHovered:NO];
 		hoveredCell = [self cellAtRow:row column:col];
 		
-		[hoveredCell setIsHovered:YES];			
+		[hoveredCell setIsHovered:YES];
+		[[NSNotificationCenter defaultCenter] postNotificationName:SWToolboxVisualStateChangedNotification object:self];
 	}
+}
+
+- (void)mouseDown:(NSEvent *)theEvent
+{
+	[super mouseDown:theEvent];
+	[[NSNotificationCenter defaultCenter] postNotificationName:SWToolboxVisualStateChangedNotification object:self];
+}
+
+- (void)selectCell:(NSCell *)cell
+{
+	[super selectCell:cell];
+	[[NSNotificationCenter defaultCenter] postNotificationName:SWToolboxVisualStateChangedNotification object:self];
 }
 
 @end

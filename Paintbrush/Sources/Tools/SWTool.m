@@ -18,35 +18,35 @@
 
 
 #import "SWTool.h"
-#import "SWToolboxController.h"
+#import "SWToolboxState.h"
 
 @implementation SWTool
 
 @synthesize flags;
 @synthesize document;
 
-- (id)initWithController:(SWToolboxController *)controller
+- (id)initWithToolboxState:(SWToolboxState *)state
 {
 	if(self = [super init]) 
 	{
 		[self resetRedrawRect];
-		toolboxController = controller;
-		[controller addObserver:self 
-					 forKeyPath:@"lineWidth" 
-						options:NSKeyValueObservingOptionNew 
-						context:NULL];
-		[controller addObserver:self 
-					 forKeyPath:@"foregroundColor" 
-						options:NSKeyValueObservingOptionNew 
-						context:NULL];
-		[controller addObserver:self 
-					 forKeyPath:@"backgroundColor" 
-						options:NSKeyValueObservingOptionNew 
-						context:NULL];
-		[controller addObserver:self 
-					 forKeyPath:@"fillStyle" 
-						options:NSKeyValueObservingOptionNew 
-						context:NULL];
+		toolboxState = [state retain];
+		[toolboxState addObserver:self
+						forKeyPath:@"lineWidth"
+						   options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial
+						   context:NULL];
+		[toolboxState addObserver:self
+						forKeyPath:@"foregroundColor"
+						   options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial
+						   context:NULL];
+		[toolboxState addObserver:self
+						forKeyPath:@"backgroundColor"
+						   options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial
+						   context:NULL];
+		[toolboxState addObserver:self
+						forKeyPath:@"fillStyle"
+						   options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial
+						   context:NULL];
 	}
 	return self;
 }
@@ -216,10 +216,11 @@
 {
 	[customCursor release];
 	[document release];
-	[toolboxController removeObserver:self forKeyPath:@"lineWidth"];
-	[toolboxController removeObserver:self forKeyPath:@"foregroundColor"];
-	[toolboxController removeObserver:self forKeyPath:@"backgroundColor"];
-	[toolboxController removeObserver:self forKeyPath:@"fillStyle"];
+	[toolboxState removeObserver:self forKeyPath:@"lineWidth"];
+	[toolboxState removeObserver:self forKeyPath:@"foregroundColor"];
+	[toolboxState removeObserver:self forKeyPath:@"backgroundColor"];
+	[toolboxState removeObserver:self forKeyPath:@"fillStyle"];
+	[toolboxState release];
 	[super dealloc];
 }
 

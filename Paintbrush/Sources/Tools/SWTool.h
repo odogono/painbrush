@@ -19,7 +19,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@class SWToolboxController;
+@class SWToolboxState;
 @class SWDocument;
 
 typedef enum 
@@ -46,7 +46,7 @@ typedef enum
 	NSUInteger flags;
 	NSPoint savedPoint;
 	NSRect redrawRect, savedRect;
-	SWToolboxController *toolboxController;
+	id toolboxState;
 	
 	NSCursor *customCursor;
 	
@@ -54,7 +54,7 @@ typedef enum
 	SWDocument *document;
 }
 
-- (id)initWithController:(SWToolboxController *)controller;
+- (id)initWithToolboxState:(SWToolboxState *)state;
 //- (id)copyWithZone:(NSZone *)zone;
 
 // Some setters

@@ -20,6 +20,7 @@
 #import "SWToolbox.h"
 #import "SWToolList.h"
 #import "SWToolboxController.h"
+#import "SWToolboxState.h"
 #import "SWPaintView.h"
 #import "SWDocument.h"
 
@@ -29,26 +30,31 @@
 
 - (id)initWithDocument:(SWDocument *)doc
 {
+	return [self initWithDocument:doc toolboxState:[SWToolboxState sharedToolboxState]];
+}
+
+- (id)initWithDocument:(SWDocument *)doc toolboxState:(SWToolboxState *)state
+{
 	self = [super init];
 	
-	sharedController = [SWToolboxController sharedToolboxPanelController];
+	toolboxState = [state retain];
 	
 	// Create the dictionary
 	toolList = [[NSMutableDictionary alloc] initWithCapacity:14];
 	for (Class c in [SWToolbox toolClassList]) 
 	{
-		SWTool *tool = [[c alloc] initWithController:sharedController];
+		SWTool *tool = [[c alloc] initWithToolboxState:toolboxState];
 		[tool setDocument:doc];
 		[toolList setObject:tool forKey:[tool description]];
 	}
 	
-	[sharedController addObserver:self 
-					   forKeyPath:@"currentTool" 
-						  options:NSKeyValueObservingOptionNew 
-						  context:NULL];
+	[toolboxState addObserver:self
+					forKeyPath:@"currentTool"
+					   options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial
+					   context:NULL];
 	
 	// Set the initial tool info
-	[sharedController updateInfo];
+	[toolboxState updateInfo];
 	
 	return self;
 }
@@ -57,11 +63,12 @@
 // Don't forget to remove my registration to the toolbox controller!
 - (void)dealloc
 {
-	[sharedController removeObserver:self forKeyPath:@"currentTool"];
+	[toolboxState removeObserver:self forKeyPath:@"currentTool"];
 	for (id key in toolList) {
 		[[toolList objectForKey:key] release];
 	}
 	[toolList release];
+	[toolboxState release];
 	[currentTool release];
 	[super dealloc];
 }

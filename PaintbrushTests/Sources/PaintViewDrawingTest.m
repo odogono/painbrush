@@ -23,6 +23,7 @@
 #import "SWImageDataSource.h"
 #import "SWImageTools.h"
 #import "SWSelectionTool.h"
+#import "SWToolboxState.h"
 
 @interface PBToolboxControllerDouble : NSObject
 @property (assign) NSInteger lineWidth;
@@ -201,7 +202,7 @@ static BOOL PBImageHasOpaquePixelInRect(NSBitmapImageRep *image, NSRect rect)
 static SWSelectionTool *PBMakeSelectionToolWithBackgroundColor(NSColor *backgroundColor)
 {
     PBToolboxControllerDouble *controller = [[PBToolboxControllerDouble alloc] init];
-    SWSelectionTool *tool = [[[SWSelectionTool alloc] initWithController:(SWToolboxController *)controller] autorelease];
+    SWSelectionTool *tool = [[[SWSelectionTool alloc] initWithToolboxState:(SWToolboxState *)controller] autorelease];
     [controller setLineWidth:1];
     [controller setForegroundColor:[NSColor blackColor]];
     if (backgroundColor)
@@ -305,6 +306,35 @@ static SWSelectionTool *PBMakeSelectionToolWithoutBackgroundColor(void)
 @end
 
 @implementation PaintViewDrawingTest
+
+- (void)testToolboxStateDefaultsMatchExistingToolboxBehavior
+{
+    SWToolboxState *state = [[[SWToolboxState alloc] init] autorelease];
+
+    XCTAssertEqualObjects([state currentTool], @"Brush");
+    XCTAssertEqual([state lineWidthDisplay], 3);
+    XCTAssertEqual([state lineWidth], 4);
+    XCTAssertEqual([state fillStyle], STROKE_ONLY);
+    XCTAssertFalse([state selectionTransparency]);
+    XCTAssertTrue([SWImageTools color:[state foregroundColor] isEqualToColor:[NSColor colorWithCalibratedRed:0.0 green:0.0 blue:0.0 alpha:1.0]]);
+    XCTAssertTrue([SWImageTools color:[state backgroundColor] isEqualToColor:[NSColor colorWithCalibratedRed:1.0 green:1.0 blue:1.0 alpha:1.0]]);
+}
+
+- (void)testMultipleToolboxConsumersTrackSharedState
+{
+    SWToolboxState *state = [[[SWToolboxState alloc] init] autorelease];
+    SWBrushTool *firstTool = [[[SWBrushTool alloc] initWithToolboxState:state] autorelease];
+    SWBrushTool *secondTool = [[[SWBrushTool alloc] initWithToolboxState:state] autorelease];
+    NSColor *red = [NSColor colorWithCalibratedRed:1.0 green:0.0 blue:0.0 alpha:1.0];
+
+    [state setLineWidthDisplay:5];
+    [state setForegroundColor:red];
+
+    XCTAssertEqual([firstTool lineWidth], 8);
+    XCTAssertEqual([secondTool lineWidth], 8);
+    XCTAssertTrue([SWImageTools color:[firstTool drawingColor] isEqualToColor:red]);
+    XCTAssertTrue([SWImageTools color:[secondTool drawingColor] isEqualToColor:red]);
+}
 
 - (void)testInitImageRepCreatesTransparentBitmap
 {
@@ -1191,7 +1221,7 @@ static SWSelectionTool *PBMakeSelectionToolWithoutBackgroundColor(void)
     PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
     NSData *originalCanvasData = PBCanvasData(dataSource);
 
-    SWBrushTool *tool = [[[SWBrushTool alloc] initWithController:nil] autorelease];
+    SWBrushTool *tool = [[[SWBrushTool alloc] initWithToolboxState:nil] autorelease];
     [tool setDocument:(SWDocument *)undoHost];
     [tool setFrontColor:[NSColor blackColor]];
     [tool setBackColor:[NSColor whiteColor]];

@@ -18,7 +18,7 @@
 
 
 #import "SWSelectionTool.h"
-#import "SWToolboxController.h"
+#import "SWToolboxState.h"
 #import "SWDocument.h"
 #if __has_include("Paintbrush-Swift.h")
 #import "Paintbrush-Swift.h"
@@ -42,12 +42,12 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 		_bufferImage = [document updateSelectionExtentForSelectionRect:[self clippingRect]];
 }
 
-- (id)initWithController:(SWToolboxController *)controller;
+- (id)initWithToolboxState:(SWToolboxState *)state
 {
-	if (self = [super initWithController:controller]) {
-		[controller addObserver:self
+	if (self = [super initWithToolboxState:state]) {
+		[toolboxState addObserver:self
 					 forKeyPath:@"selectionTransparency" 
-						options:NSKeyValueObservingOptionNew 
+						options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial
 						context:NULL];
 		dottedLineOffset = 0;
 		dottedLineArray[0] = 5.0;
@@ -95,8 +95,8 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 	if ([backColor isKindOfClass:[NSColor class]])
 		return backColor;
 
-	if ([toolboxController respondsToSelector:@selector(backgroundColor)]) {
-		NSColor *color = [toolboxController backgroundColor];
+	if ([toolboxState respondsToSelector:@selector(backgroundColor)]) {
+		NSColor *color = [toolboxState backgroundColor];
 		if ([color isKindOfClass:[NSColor class]])
 			return color;
 	}
@@ -433,7 +433,7 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 
 - (void)dealloc
 {
-	[toolboxController removeObserver:self forKeyPath:@"selectionTransparency"];
+	[toolboxState removeObserver:self forKeyPath:@"selectionTransparency"];
 	[selection release];
 	[super dealloc];
 }

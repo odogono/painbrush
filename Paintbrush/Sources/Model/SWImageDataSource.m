@@ -196,6 +196,21 @@ static NSColor *SWCanvasBackgroundColor(void)
 	size = newSize;
 }
 
+- (void)resizeBufferToSize:(NSSize)newSize
+{
+	if (NSEqualSizes([bufferImage size], newSize))
+	{
+		[SWImageTools clearImage:bufferImage];
+		return;
+	}
+
+	[bufferImage release];
+	[imageArray release];
+	bufferImage = nil;
+	imageArray = nil;
+	[SWImageTools initImageRep:&bufferImage withSize:newSize];
+}
+
 
 // -----------------------------------------------------------------------------
 //  Accessors

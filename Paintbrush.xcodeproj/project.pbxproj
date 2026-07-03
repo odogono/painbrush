@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		5E5974913AAB38B4C492E4A4 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9B20F4903526FC08A9AD2E2 /* XCTest.framework */; };
 		2706B88010ED719500080D4A /* PaintViewDrawingTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B81010ED6FE400080D4A /* PaintViewDrawingTest.m */; };
+		2706B88110ED719500080D4A /* SWButtonCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 278FC09E0E478024006065E6 /* SWButtonCell.m */; };
+		2706B88210ED719500080D4A /* pressedsmall.png in Resources */ = {isa = PBXBuildFile; fileRef = 278FC0E50E47845E006065E6 /* pressedsmall.png */; };
+		2706B88310ED719500080D4A /* hoveredsmall.png in Resources */ = {isa = PBXBuildFile; fileRef = 27F537CF0E917CA4001FA420 /* hoveredsmall.png */; };
 		41C0400D8BE04E648080A101 /* SWSelectionTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400C8BE04E648080A101 /* SWSelectionTest.swift */; };
 		41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
 		41C0400F8BE04E648080A101 /* SWSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C0400B8BE04E648080A101 /* SWSelection.swift */; };
@@ -16,6 +19,7 @@
 		41C040118BE04E648080A101 /* SWImageDataSource.m in Sources */ = {isa = PBXBuildFile; fileRef = 2723FB5E1162830F005BCB1B /* SWImageDataSource.m */; };
 		41C040128BE04E648080A101 /* SWTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A60E130B879A6A0091A1B0 /* SWTool.m */; };
 		41C040138BE04E648080A101 /* SWBrushTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A60E1B0B879A6A0091A1B0 /* SWBrushTool.m */; };
+		41C040148BE04E648080A101 /* SWSelectionTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 271EEB0C0BBC34A800319865 /* SWSelectionTool.m */; };
 		2706B94D10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		2706B94E10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		298DD4C7B3E9F87BC9342A98 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 273E0B6D0E32FC2200D11815 /* QuartzCore.framework */; };
@@ -888,6 +892,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2706B88210ED719500080D4A /* pressedsmall.png in Resources */,
+				2706B88310ED719500080D4A /* hoveredsmall.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1037,12 +1043,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				2706B88010ED719500080D4A /* PaintViewDrawingTest.m in Sources */,
+				2706B88110ED719500080D4A /* SWButtonCell.m in Sources */,
 				41C0400D8BE04E648080A101 /* SWSelectionTest.swift in Sources */,
 				2706B94D10ED77A600080D4A /* DebugLog.m in Sources */,
 				41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */,
 				41C040118BE04E648080A101 /* SWImageDataSource.m in Sources */,
 				41C040128BE04E648080A101 /* SWTool.m in Sources */,
 				41C040138BE04E648080A101 /* SWBrushTool.m in Sources */,
+				41C040148BE04E648080A101 /* SWSelectionTool.m in Sources */,
 				AFFB5C3C4AECD04504765B97 /* SWImageTools.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -39,6 +39,7 @@
 + (BOOL)color:(NSColor *)c1 isEqualToColor:(NSColor *)c2;
 + (void)stripImage:(NSBitmapImageRep *)imageRep ofColor:(NSColor *)color;
 + (NSData *)readImageFromPasteboard:(NSPasteboard *)pb;
++ (NSBitmapImageRep *)imageRepWithPasteboardImageData:(NSData *)data;
 + (NSBitmapImageRep *)cropImage:(NSBitmapImageRep *)image toRect:(NSRect)rect;
 
 // User requested feature!

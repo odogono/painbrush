@@ -27,6 +27,7 @@
 	CGFloat dottedLineArray[2];
 	NSInteger dottedLineOffset;
 	NSPoint previousPoint;
+	NSRect marqueeRect;
 
 	BOOL shouldOmitBackground;
 	SWSelection *selection;
@@ -42,5 +43,7 @@
 		  withMainImage:(NSBitmapImageRep *)mainImage;
 - (void)drawNewBorder:(NSTimer *)timer;
 - (void)updateBackgroundOmission;
+- (void)cancelSelection;
+- (void)discardSelection;
 
 @end

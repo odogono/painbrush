@@ -52,6 +52,7 @@
 // Modifiers to the image
 - (void)resizeToSize:(NSSize)size
 		  scaleImage:(BOOL)shouldScale;
+- (void)resizeBufferToSize:(NSSize)size;
 
 // Need to change the image?  We got your back -- here be datas
 - (SWCanvasHistorySnapshot *)canvasHistorySnapshot;

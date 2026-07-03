@@ -25,6 +25,9 @@ typedef enum {
 	FILL_AND_STROKE
 } SWFillStyle;
 
+// Posted when any toolbox control state changes so the visual overlay repaints.
+extern NSString * const SWToolboxVisualStateChangedNotification;
+
 @class SWColorSelector;
 @class SWMatrix;
 @class SWToolbox;
@@ -41,6 +44,11 @@ typedef enum {
 	IBOutlet SWMatrix *toolMatrix;
 	IBOutlet SWMatrix *transparencyMatrix;
 	IBOutlet SWMatrix *fillMatrix;	
+	NSRect originalToolMatrixFrame;
+	NSRect originalTransparencyMatrixFrame;
+	NSRect originalFillMatrixFrame;
+	CGFloat originalContentHeight;
+	NSView *toolboxVisualOverlay;
 	
 	// My toolbox -- used when there's no active document
 	SWToolbox *toolbox;

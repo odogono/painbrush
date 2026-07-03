@@ -542,9 +542,43 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	[paintView setFrame:NSMakeRect(0.0, 0.0, [dataSource size].width, [dataSource size].height)];
 	// Only clear the overlay while undoing -- NEVER while redoing, or we wipe the
 	// restored selection and re-enter undo registration via the current tool's tieUpLooseEnds
-	if ([[self undoManager] isUndoing])
-		[paintView clearOverlay];
+	if ([[self undoManager] isUndoing]) {
+		if ([[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+			[(SWSelectionTool *)[toolbox currentTool] discardSelection];
+		else
+			[paintView clearOverlay];
+	}
 	[paintView setNeedsDisplay:YES];
+	[clipView setNeedsDisplay:YES];
+}
+
+- (NSSize)selectionExtentSizeForSelectionRect:(NSRect)selectionRect
+{
+	#pragma unused(selectionRect)
+	return [dataSource size];
+}
+
+- (NSBitmapImageRep *)updateSelectionExtentForSelectionRect:(NSRect)selectionRect
+{
+	// Called on every drag frame while moving a selection; the extent size only
+	// changes occasionally. Skip the buffer reallocation, reframe, and clip-view
+	// invalidation when the size is unchanged -- the tool's own redraw path
+	// handles the per-frame overlay repaint.
+	NSSize extentSize = [self selectionExtentSizeForSelectionRect:selectionRect];
+	if (!NSEqualSizes(extentSize, [[dataSource bufferImage] size]))
+	{
+		[dataSource resizeBufferToSize:extentSize];
+		[paintView setFrame:NSMakeRect(0.0, 0.0, extentSize.width, extentSize.height)];
+		[clipView setNeedsDisplay:YES];
+	}
+	return [dataSource bufferImage];
+}
+
+- (void)resetSelectionExtent
+{
+	NSSize canvasSize = [dataSource size];
+	[dataSource resizeBufferToSize:canvasSize];
+	[paintView setFrame:NSMakeRect(0.0, 0.0, canvasSize.width, canvasSize.height)];
 	[clipView setNeedsDisplay:YES];
 }
 
@@ -591,7 +625,7 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	if (data)
 	{
 		[paintView cursorUpdate:nil];
-		NSBitmapImageRep *temp = [[NSBitmapImageRep alloc] initWithData:data];
+		NSBitmapImageRep *temp = [SWImageTools imageRepWithPasteboardImageData:data];
 
 		NSPoint origin = [[paintView superview] bounds].origin;
 		if (origin.x < 0) origin.x = 0;
@@ -603,15 +637,12 @@ static BOOL kSWDocumentWillShowSheet = YES;
 		// Use ceiling because pixels can be fractions, but the tool assumes integer values								 
 		rect.size = NSMakeSize(ceil([temp size].width), ceil([temp size].height));
 		
-		// As always, flip the image to be viewed in our flipped view
-		[SWImageTools flipImageVertical:temp];
 		[SWImageTools clearImage:[dataSource bufferImage]];
 
 		[(SWSelectionTool *)[toolbox currentTool] setClippingRect:rect
 														 forImage:temp
 													  bufferImage:[dataSource bufferImage]
 													withMainImage:[dataSource mainImage]];
-		[temp release];
 		[paintView setNeedsDisplay:YES];
 	}
 }

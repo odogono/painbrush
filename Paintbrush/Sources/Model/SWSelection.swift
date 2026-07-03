@@ -138,12 +138,18 @@ public final class SWSelection: NSObject {
     }
 
     private static func copyImage(_ image: NSBitmapImageRep) -> NSBitmapImageRep {
-        cropImage(image, to: NSRect(origin: .zero, size: image.size))
+        cropImage(image, to: NSRect(origin: .zero, size: NSSize(width: image.pixelsWide, height: image.pixelsHigh)))
     }
 
     private static func cropImage(_ image: NSBitmapImageRep, to rect: NSRect) -> NSBitmapImageRep {
         let croppedImage = makeImage(size: rect.size)
-        copyPixels(from: image, rect: rect, to: croppedImage, at: .zero, compositingOver: false)
+        copyPixels(
+            from: image,
+            rect: bitmapRect(forDisplayRect: rect, in: image),
+            to: croppedImage,
+            at: .zero,
+            compositingOver: false
+        )
         return croppedImage
     }
 
@@ -156,7 +162,13 @@ public final class SWSelection: NSObject {
     }
 
     private static func draw(_ source: NSBitmapImageRep, in destination: NSBitmapImageRep, at point: NSPoint, compositingOver: Bool) {
-        copyPixels(from: source, rect: NSRect(origin: .zero, size: source.size), to: destination, at: point, compositingOver: compositingOver)
+        copyPixels(
+            from: source,
+            rect: NSRect(origin: .zero, size: NSSize(width: source.pixelsWide, height: source.pixelsHigh)),
+            to: destination,
+            at: bitmapPoint(forDisplayPoint: point, sourceHeight: source.pixelsHigh, in: destination),
+            compositingOver: compositingOver
+        )
     }
 
     private static func channelByte(_ component: CGFloat) -> UInt8 {
@@ -174,10 +186,11 @@ public final class SWSelection: NSObject {
         let green = channelByte(convertedColor.greenComponent)
         let blue = channelByte(convertedColor.blueComponent)
         let alpha = channelByte(convertedColor.alphaComponent)
-        let minX = max(0, Int(rect.origin.x))
-        let minY = max(0, Int(rect.origin.y))
-        let maxX = min(image.pixelsWide, Int(rect.origin.x + rect.size.width))
-        let maxY = min(image.pixelsHigh, Int(rect.origin.y + rect.size.height))
+        let bitmapRect = bitmapRect(forDisplayRect: rect, in: image)
+        let minX = max(0, Int(bitmapRect.origin.x))
+        let minY = max(0, Int(bitmapRect.origin.y))
+        let maxX = min(image.pixelsWide, Int(bitmapRect.origin.x + bitmapRect.size.width))
+        let maxY = min(image.pixelsHigh, Int(bitmapRect.origin.y + bitmapRect.size.height))
 
         for y in minY..<maxY {
             var pixel = bitmapData.advanced(by: y * image.bytesPerRow + minX * image.samplesPerPixel)
@@ -189,6 +202,22 @@ public final class SWSelection: NSObject {
                 pixel = pixel.advanced(by: image.samplesPerPixel)
             }
         }
+    }
+
+    private static func bitmapRect(forDisplayRect rect: NSRect, in image: NSBitmapImageRep) -> NSRect {
+        NSRect(
+            x: rect.origin.x,
+            y: CGFloat(image.pixelsHigh) - rect.origin.y - rect.size.height,
+            width: rect.size.width,
+            height: rect.size.height
+        )
+    }
+
+    private static func bitmapPoint(forDisplayPoint point: NSPoint, sourceHeight: Int, in image: NSBitmapImageRep) -> NSPoint {
+        NSPoint(
+            x: point.x,
+            y: CGFloat(image.pixelsHigh - sourceHeight) - point.y
+        )
     }
 
     private static func copyPixels(
@@ -279,7 +308,6 @@ public final class SWSelection: NSObject {
         let scratch = UnsafeMutablePointer<UInt8>.allocate(capacity: bytesPerRow)
         defer { scratch.deallocate() }
 
-        // Swap row pairs in place: top <-> bottom, walking toward the middle.
         for y in 0..<(image.pixelsHigh / 2) {
             let topRow = data.advanced(by: y * bytesPerRow)
             let bottomRow = data.advanced(by: (image.pixelsHigh - y - 1) * bytesPerRow)

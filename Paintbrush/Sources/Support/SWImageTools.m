@@ -92,49 +92,56 @@
 
 + (void)flipImageHorizontal:(NSBitmapImageRep *)bitmap
 {
-	// Make a copy of our image for using is a second
-	NSBitmapImageRep *tempImage;
-	[SWImageTools initImageRep:&tempImage withSize:[bitmap size]];
-	[SWImageTools drawToImage:tempImage fromImage:bitmap withComposition:NO];
-	[SWImageTools clearImage:bitmap];
-	NSAffineTransform *transform = [NSAffineTransform transform];
-	
-	// Create the transform
-	[transform scaleXBy:-1.0 yBy:1.0];
-	[transform translateXBy:(0-[bitmap pixelsWide]) yBy:0];
-	
-	[NSGraphicsContext saveGraphicsState];
-	[NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap]];
-	[transform concat];
-	[[NSGraphicsContext currentContext] setCompositingOperation:NSCompositeSourceOver];
-	[tempImage draw];
-	[NSGraphicsContext restoreGraphicsState];
-	
-	[tempImage release];
+	unsigned char *data = [bitmap bitmapData];
+	if (!data || [bitmap isPlanar])
+		return;
+
+	NSInteger bytesPerPixel = [bitmap bitsPerPixel] / 8;
+	if (bytesPerPixel <= 0)
+		bytesPerPixel = [bitmap samplesPerPixel];
+
+	unsigned char *scratch = malloc(bytesPerPixel);
+	if (!scratch)
+		return;
+
+	for (NSInteger y = 0; y < [bitmap pixelsHigh]; y++)
+	{
+		unsigned char *row = data + y * [bitmap bytesPerRow];
+		for (NSInteger x = 0; x < [bitmap pixelsWide] / 2; x++)
+		{
+			unsigned char *leftPixel = row + x * bytesPerPixel;
+			unsigned char *rightPixel = row + ([bitmap pixelsWide] - x - 1) * bytesPerPixel;
+			memcpy(scratch, leftPixel, bytesPerPixel);
+			memcpy(leftPixel, rightPixel, bytesPerPixel);
+			memcpy(rightPixel, scratch, bytesPerPixel);
+		}
+	}
+
+	free(scratch);
 }
 
 
 + (void)flipImageVertical:(NSBitmapImageRep *)bitmap
 {
-	// Make a copy of our image for using is a second
-	NSBitmapImageRep *tempImage;
-	[SWImageTools initImageRep:&tempImage withSize:[bitmap size]];
-	[SWImageTools drawToImage:tempImage fromImage:bitmap withComposition:NO];
-	[SWImageTools clearImage:bitmap];
-	NSAffineTransform *transform = [NSAffineTransform transform];
-	
-	// Create the transform
-	[transform scaleXBy:1.0 yBy:-1.0];
-	[transform translateXBy:0 yBy:(0-[bitmap pixelsHigh])];
-	
-	[NSGraphicsContext saveGraphicsState];
-	[NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap]];
-	[transform concat];
-	[[NSGraphicsContext currentContext] setCompositingOperation:NSCompositeSourceOver];
-	[tempImage draw];
-	[NSGraphicsContext restoreGraphicsState];
-	
-	[tempImage release];
+	unsigned char *data = [bitmap bitmapData];
+	if (!data || [bitmap isPlanar])
+		return;
+
+	NSInteger bytesPerRow = [bitmap bytesPerRow];
+	unsigned char *scratch = malloc(bytesPerRow);
+	if (!scratch)
+		return;
+
+	for (NSInteger y = 0; y < [bitmap pixelsHigh] / 2; y++)
+	{
+		unsigned char *topRow = data + y * bytesPerRow;
+		unsigned char *bottomRow = data + ([bitmap pixelsHigh] - y - 1) * bytesPerRow;
+		memcpy(scratch, topRow, bytesPerRow);
+		memcpy(topRow, bottomRow, bytesPerRow);
+		memcpy(bottomRow, scratch, bytesPerRow);
+	}
+
+	free(scratch);
 }
 
 
@@ -322,6 +329,14 @@
 		data = [pb dataForType:NSPICTPboardType];
 
 	return data;
+}
+
++ (NSBitmapImageRep *)imageRepWithPasteboardImageData:(NSData *)data
+{
+	NSBitmapImageRep *image = [[[NSBitmapImageRep alloc] initWithData:data] autorelease];
+	if (image)
+		[SWImageTools flipImageVertical:image];
+	return image;
 }
 
 

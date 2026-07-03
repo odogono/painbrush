@@ -18,14 +18,15 @@
 
 
 #import "SWTextTool.h"
+#import "SWToolboxState.h"
 #import "SWDocument.h"
 #import "SWPaintView.h"
 
 @implementation SWTextTool
 
-- (id)initWithController:(SWToolboxController *)controller
+- (id)initWithToolboxState:(SWToolboxState *)state
 {
-	if (self = [super initWithController:controller]) {
+	if (self = [super initWithToolboxState:state]) {
 		[[NSNotificationCenter defaultCenter] addObserver:self
 												 selector:@selector(insertText:)
 													 name:@"SWTextEntered"

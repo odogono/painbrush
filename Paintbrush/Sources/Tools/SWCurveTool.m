@@ -18,13 +18,14 @@
 
 
 #import "SWCurveTool.h"
+#import "SWToolboxState.h"
 #import "SWDocument.h"
 
 @implementation SWCurveTool
 
-- (id)initWithController:(SWToolboxController *)controller
+- (id)initWithToolboxState:(SWToolboxState *)state
 {
-	if (self = [super initWithController:controller])
+	if (self = [super initWithToolboxState:state])
 		numberOfClicks = 0;
 
 	return self;

@@ -19,14 +19,14 @@
 
 #import <Cocoa/Cocoa.h>
 
-@class SWToolboxController;
+@class SWToolboxState;
 @class SWTool;
 @class SWDocument;
 
 @interface SWToolbox : NSObject 
 {
 	NSMutableDictionary *toolList;
-	SWToolboxController *sharedController;
+	SWToolboxState *toolboxState;
 	
 	// The currently-selected tool
 	SWTool *currentTool;
@@ -35,6 +35,7 @@
 @property (retain,nonatomic) SWTool *currentTool;
 
 - (id)initWithDocument:(SWDocument *)doc;
+- (id)initWithDocument:(SWDocument *)doc toolboxState:(SWToolboxState *)state;
 + (NSArray *)toolClassList;
 - (SWTool *)toolForLabel:(NSString *)label;
 - (void)tieUpLooseEndsForCurrentTool;

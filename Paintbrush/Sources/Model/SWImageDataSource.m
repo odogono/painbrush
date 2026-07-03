@@ -18,21 +18,12 @@
 
 
 #import "SWImageDataSource.h"
+#import "SWToolboxState.h"
 
 static NSColor *SWCanvasBackgroundColor(void)
 {
-	Class toolboxControllerClass = NSClassFromString(@"SWToolboxController");
-	SEL sharedControllerSelector = @selector(sharedToolboxPanelController);
-	SEL backgroundColorSelector = @selector(backgroundColor);
-	if (![toolboxControllerClass respondsToSelector:sharedControllerSelector])
-		return [NSColor clearColor];
-
-	id toolboxController = [toolboxControllerClass performSelector:sharedControllerSelector];
-	if (![toolboxController respondsToSelector:backgroundColorSelector])
-		return [NSColor clearColor];
-
-	NSColor *backgroundColor = [toolboxController performSelector:backgroundColorSelector];
-	return [backgroundColor isKindOfClass:[NSColor class]] ? backgroundColor : [NSColor clearColor];
+	NSColor *backgroundColor = [[SWToolboxState sharedToolboxState] backgroundColor];
+	return backgroundColor ? backgroundColor : [NSColor clearColor];
 }
 
 

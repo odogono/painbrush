@@ -22,6 +22,13 @@
 		41C040128BE04E648080A101 /* SWTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A60E130B879A6A0091A1B0 /* SWTool.m */; };
 		41C040138BE04E648080A101 /* SWBrushTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A60E1B0B879A6A0091A1B0 /* SWBrushTool.m */; };
 		41C040148BE04E648080A101 /* SWSelectionTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 271EEB0C0BBC34A800319865 /* SWSelectionTool.m */; };
+		13A130000000000000000006 /* SWToolboxState.m in Sources */ = {isa = PBXBuildFile; fileRef = 13A130000000000000000002 /* SWToolboxState.m */; };
+		13A130000000000000000007 /* SWToolboxState.m in Sources */ = {isa = PBXBuildFile; fileRef = 13A130000000000000000002 /* SWToolboxState.m */; };
+		13A130000000000000000008 /* SWToolboxState.m in Sources */ = {isa = PBXBuildFile; fileRef = 13A130000000000000000002 /* SWToolboxState.m */; };
+		13A130000000000000000009 /* SWToolboxSurfaceController.m in Sources */ = {isa = PBXBuildFile; fileRef = 13A130000000000000000004 /* SWToolboxSurfaceController.m */; };
+		13A13000000000000000000A /* SWToolboxSurfaceController.m in Sources */ = {isa = PBXBuildFile; fileRef = 13A130000000000000000004 /* SWToolboxSurfaceController.m */; };
+		13A13000000000000000000B /* ToolboxSurface.xib in Resources */ = {isa = PBXBuildFile; fileRef = 13A13000000000000000000E /* ToolboxSurface.xib */; };
+		13A13000000000000000000C /* ToolboxSurface.xib in Resources */ = {isa = PBXBuildFile; fileRef = 13A13000000000000000000E /* ToolboxSurface.xib */; };
 		2706B94D10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		2706B94E10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		298DD4C7B3E9F87BC9342A98 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 273E0B6D0E32FC2200D11815 /* QuartzCore.framework */; };
@@ -328,6 +335,10 @@
 		278FC2B90E4A3E21006065E6 /* SWToolboxPanel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Paintbrush/Sources/Support/SWToolboxPanel.m"; sourceTree = "<group>"; };
 		27955CBE0CFDE0C800D5AF99 /* SWColorWell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Paintbrush/Sources/Views/SWColorWell.h"; sourceTree = "<group>"; };
 		27955CBF0CFDE0C800D5AF99 /* SWColorWell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Paintbrush/Sources/Views/SWColorWell.m"; sourceTree = "<group>"; };
+		13A130000000000000000001 /* SWToolboxState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Paintbrush/Sources/Controllers/SWToolboxState.h"; sourceTree = "<group>"; };
+		13A130000000000000000002 /* SWToolboxState.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Paintbrush/Sources/Controllers/SWToolboxState.m"; sourceTree = "<group>"; };
+		13A130000000000000000003 /* SWToolboxSurfaceController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Paintbrush/Sources/Controllers/SWToolboxSurfaceController.h"; sourceTree = "<group>"; };
+		13A130000000000000000004 /* SWToolboxSurfaceController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Paintbrush/Sources/Controllers/SWToolboxSurfaceController.m"; sourceTree = "<group>"; };
 		27955D060CFDE7B900D5AF99 /* arrow.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Paintbrush/Resources/Images/arrow.png"; sourceTree = "<group>"; };
 		27A1CD2C10A64F02005D2D84 /* SWSavePanelAccessoryViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Paintbrush/Sources/Controllers/SWSavePanelAccessoryViewController.h"; sourceTree = "<group>"; };
 		27A1CD2D10A64F02005D2D84 /* SWSavePanelAccessoryViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Paintbrush/Sources/Controllers/SWSavePanelAccessoryViewController.m"; sourceTree = "<group>"; };
@@ -417,6 +428,7 @@
 		27F7B89A0DE368CC0038ED41 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "Paintbrush/Resources/Interface/English.lproj/SizeWindow.xib"; sourceTree = "<group>"; };
 		27F7B89D0DE368FA0038ED41 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "Paintbrush/Resources/Interface/English.lproj/TextEntry.xib"; sourceTree = "<group>"; };
 		27F7B8A00DE369080038ED41 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "Paintbrush/Resources/Interface/English.lproj/Toolbox.xib"; sourceTree = "<group>"; };
+		13A13000000000000000000D /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = "Paintbrush/Resources/Interface/English.lproj/ToolboxSurface.xib"; sourceTree = "<group>"; };
 		27FB97291093717400147DDF /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = "Paintbrush/Resources/Interface/English.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		27FFFE960ECCC78E0036CFE6 /* pressedwell.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Paintbrush/Resources/Images/pressedwell.png"; sourceTree = "<group>"; };
 		27FFFEA20ECCE40E0036CFE6 /* hoveredwell.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Paintbrush/Resources/Images/hoveredwell.png"; sourceTree = "<group>"; };
@@ -585,6 +597,10 @@
 				27A2E3AC0F31051500BD41AC /* SWToolbox.m */,
 				27A60E230B879A6A0091A1B0 /* SWToolboxController.h */,
 				27A60E240B879A6A0091A1B0 /* SWToolboxController.m */,
+				13A130000000000000000003 /* SWToolboxSurfaceController.h */,
+				13A130000000000000000004 /* SWToolboxSurfaceController.m */,
+				13A130000000000000000001 /* SWToolboxState.h */,
+				13A130000000000000000002 /* SWToolboxState.m */,
 			);
 			name = Controllers;
 			sourceTree = "<group>";
@@ -660,6 +676,7 @@
 				27389A1B0F2A9AD90062831A /* SizeWindow.xib */,
 				27389A1D0F2A9AE00062831A /* TextEntry.xib */,
 				27389A1F0F2A9AE60062831A /* Toolbox.xib */,
+				13A13000000000000000000E /* ToolboxSurface.xib */,
 			);
 			name = NIBs;
 			sourceTree = "<group>";
@@ -932,6 +949,7 @@
 				27A2E07316AB70B400F124D1 /* SizeWindow.xib in Resources */,
 				27A2E07416AB70B400F124D1 /* TextEntry.xib in Resources */,
 				27A2E07516AB70B400F124D1 /* Toolbox.xib in Resources */,
+				13A13000000000000000000B /* ToolboxSurface.xib in Resources */,
 				27A2E07616AB70B400F124D1 /* stroke.png in Resources */,
 				27A2E07716AB70B400F124D1 /* fillstroke.png in Resources */,
 				27A2E07816AB70B400F124D1 /* pressedsmall.png in Resources */,
@@ -1001,6 +1019,7 @@
 				27389A1C0F2A9AD90062831A /* SizeWindow.xib in Resources */,
 				27389A1E0F2A9AE00062831A /* TextEntry.xib in Resources */,
 				27389A200F2A9AE60062831A /* Toolbox.xib in Resources */,
+				13A13000000000000000000C /* ToolboxSurface.xib in Resources */,
 				27E08C320E33F807002F49E6 /* stroke.png in Resources */,
 				27E08C3A0E33F817002F49E6 /* fillstroke.png in Resources */,
 				278FC0E60E47845E006065E6 /* pressedsmall.png in Resources */,
@@ -1054,6 +1073,7 @@
 				41C0400E8BE04E648080A101 /* SWSelection.swift in Sources */,
 				41C040118BE04E648080A101 /* SWImageDataSource.m in Sources */,
 				41C040128BE04E648080A101 /* SWTool.m in Sources */,
+				13A130000000000000000006 /* SWToolboxState.m in Sources */,
 				41C040138BE04E648080A101 /* SWBrushTool.m in Sources */,
 				41C040148BE04E648080A101 /* SWSelectionTool.m in Sources */,
 				2706B88510ED719500080D4A /* SWCenteringClipView.m in Sources */,
@@ -1075,6 +1095,8 @@
 				27A2E0A116AB70B400F124D1 /* SWRectangleTool.m in Sources */,
 				27A2E0A216AB70B400F124D1 /* SWPaintView.m in Sources */,
 				27A2E0A316AB70B400F124D1 /* SWToolboxController.m in Sources */,
+				13A130000000000000000007 /* SWToolboxState.m in Sources */,
+				13A130000000000000000009 /* SWToolboxSurfaceController.m in Sources */,
 				27A2E0A416AB70B400F124D1 /* SWDocument.m in Sources */,
 				27A2E0A516AB70B400F124D1 /* SWFillTool.m in Sources */,
 				27A2E0A616AB70B400F124D1 /* SWPreferenceController.m in Sources */,
@@ -1125,6 +1147,8 @@
 				27A60E2C0B879A6A0091A1B0 /* SWRectangleTool.m in Sources */,
 				27A60E2E0B879A6A0091A1B0 /* SWPaintView.m in Sources */,
 				27A60E2F0B879A6A0091A1B0 /* SWToolboxController.m in Sources */,
+				13A130000000000000000008 /* SWToolboxState.m in Sources */,
+				13A13000000000000000000A /* SWToolboxSurfaceController.m in Sources */,
 				27A60E300B879A6A0091A1B0 /* SWDocument.m in Sources */,
 				27B686C50BA1395B0028A526 /* SWFillTool.m in Sources */,
 				275C82DE0BAF98DC00F836FA /* SWPreferenceController.m in Sources */,
@@ -1209,6 +1233,14 @@
 				27F7B8A00DE369080038ED41 /* English */,
 			);
 			name = Toolbox.xib;
+			sourceTree = "<group>";
+		};
+		13A13000000000000000000E /* ToolboxSurface.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				13A13000000000000000000D /* English */,
+			);
+			name = ToolboxSurface.xib;
 			sourceTree = "<group>";
 		};
 		273BE3BC101135C800AA0B05 /* ResizePanel.xib */ = {

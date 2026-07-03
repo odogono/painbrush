@@ -15,3 +15,7 @@ _Avoid_: Overlay selection, clipping rect
 **Selection extent**:
 The temporary overlay area used while a live Selection is active; it is clipped to the Canvas bounds on all edges.
 _Avoid_: Canvas resize, pasted canvas
+
+**Toolbox**:
+The user-facing control surface for choosing the active drawing tool and drawing attributes such as stroke width, fill mode, selection transparency, and foreground/background colors. It may be hosted as a floating panel or embedded in another UI host.
+_Avoid_: Toolbox panel, tool window, shared state

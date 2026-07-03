@@ -18,7 +18,7 @@
 
 
 #import "SWSlider.h"
-#import "SWToolboxController.h"
+#import "SWToolboxState.h"
 
 @implementation SWSlider
 
@@ -45,8 +45,7 @@
 		
 		// Notify the toolbox controller that we've moved the slider through
 		// an alternate channel
-		SWToolboxController *t = [SWToolboxController sharedToolboxPanelController];
-		[t setLineWidthDisplay:newValue2];
+		[[SWToolboxState sharedToolboxState] setLineWidthDisplay:newValue2];
 	}
 }
 

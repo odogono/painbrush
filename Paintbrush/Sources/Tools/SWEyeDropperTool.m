@@ -18,7 +18,7 @@
 
 
 #import "SWEyeDropperTool.h"
-#import "SWToolboxController.h"
+#import "SWToolboxState.h"
 
 
 @implementation SWEyeDropperTool
@@ -34,9 +34,9 @@
 	if (colorClicked != nil) {
 		NSColor *colorClickedConverted = [colorClicked colorUsingColorSpace:[NSColorSpace genericRGBColorSpace]];
 		if (flags & NSAlternateKeyMask) {
-			[[SWToolboxController sharedToolboxPanelController] setBackgroundColor:colorClickedConverted];
+			[[SWToolboxState sharedToolboxState] setBackgroundColor:colorClickedConverted];
 		} else {
-			[[SWToolboxController sharedToolboxPanelController] setForegroundColor:colorClickedConverted];
+			[[SWToolboxState sharedToolboxState] setForegroundColor:colorClickedConverted];
 		}
 	}
 

@@ -19,7 +19,7 @@
 
 #import "SWMatrix.h"
 #import "SWButtonCell.h"
-#import "SWToolboxController.h"
+#import "SWToolboxState.h"
 
 @implementation SWMatrix
 

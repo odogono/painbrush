@@ -20,9 +20,11 @@
 #import "PaintViewDrawingTest.h"
 #import "SWBrushTool.h"
 #import "SWCenteringClipView.h"
+#import "SWEyeDropperTool.h"
 #import "SWImageDataSource.h"
 #import "SWImageTools.h"
 #import "SWSelectionTool.h"
+#import "SWSlider.h"
 #import "SWToolboxState.h"
 
 @interface PBToolboxControllerDouble : NSObject
@@ -31,6 +33,7 @@
 @property (retain) NSColor *backgroundColor;
 @property (assign) NSInteger fillStyle;
 @property (assign) BOOL selectionTransparency;
+@property (assign) NSInteger lineWidthDisplay;
 @end
 
 @implementation PBToolboxControllerDouble
@@ -39,6 +42,7 @@
 @synthesize backgroundColor;
 @synthesize fillStyle;
 @synthesize selectionTransparency;
+@synthesize lineWidthDisplay;
 
 - (void)dealloc
 {
@@ -334,6 +338,106 @@ static SWSelectionTool *PBMakeSelectionToolWithoutBackgroundColor(void)
     XCTAssertEqual([secondTool lineWidth], 8);
     XCTAssertTrue([SWImageTools color:[firstTool drawingColor] isEqualToColor:red]);
     XCTAssertTrue([SWImageTools color:[secondTool drawingColor] isEqualToColor:red]);
+}
+
+- (void)testToolboxStateCopiesEveryToolboxSetting
+{
+    SWToolboxState *source = [[[SWToolboxState alloc] init] autorelease];
+    NSColor *foreground = [NSColor colorWithCalibratedRed:0.2 green:0.4 blue:0.6 alpha:1.0];
+    NSColor *background = [NSColor colorWithCalibratedRed:0.7 green:0.5 blue:0.3 alpha:1.0];
+
+    [source setCurrentTool:@"Eraser"];
+    [source setLineWidth:12];
+    [source setFillStyle:FILL_AND_STROKE];
+    [source setSelectionTransparency:YES];
+    [source setForegroundColor:foreground];
+    [source setBackgroundColor:background];
+
+    SWToolboxState *copy = [[[SWToolboxState alloc] initWithToolboxState:source] autorelease];
+
+    XCTAssertEqualObjects([copy currentTool], @"Eraser");
+    XCTAssertEqual([copy lineWidth], 12);
+    XCTAssertEqual([copy fillStyle], FILL_AND_STROKE);
+    XCTAssertTrue([copy selectionTransparency]);
+    XCTAssertTrue([SWImageTools color:[copy foregroundColor] isEqualToColor:foreground]);
+    XCTAssertTrue([SWImageTools color:[copy backgroundColor] isEqualToColor:background]);
+}
+
+- (void)testToolboxConsumersWithSeparateStatesDiverge
+{
+    SWToolboxState *firstState = [[[SWToolboxState alloc] init] autorelease];
+    SWToolboxState *secondState = [[[SWToolboxState alloc] init] autorelease];
+    SWBrushTool *firstTool = [[[SWBrushTool alloc] initWithToolboxState:firstState] autorelease];
+    SWBrushTool *secondTool = [[[SWBrushTool alloc] initWithToolboxState:secondState] autorelease];
+    NSColor *red = [NSColor colorWithCalibratedRed:1.0 green:0.0 blue:0.0 alpha:1.0];
+    NSColor *blue = [NSColor colorWithCalibratedRed:0.0 green:0.0 blue:1.0 alpha:1.0];
+
+    [firstState setLineWidthDisplay:2];
+    [firstState setForegroundColor:red];
+    [secondState setLineWidthDisplay:6];
+    [secondState setForegroundColor:blue];
+
+    XCTAssertEqual([firstTool lineWidth], 2);
+    XCTAssertEqual([secondTool lineWidth], 10);
+    XCTAssertTrue([SWImageTools color:[firstTool drawingColor] isEqualToColor:red]);
+    XCTAssertTrue([SWImageTools color:[secondTool drawingColor] isEqualToColor:blue]);
+}
+
+- (void)testEyedropperWritesSampledColorToBoundToolboxState
+{
+    SWToolboxState *state = [[[SWToolboxState alloc] init] autorelease];
+    SWToolboxState *sharedState = [SWToolboxState sharedToolboxState];
+    NSColor *sharedForeground = [[sharedState foregroundColor] retain];
+    NSColor *black = [NSColor colorWithCalibratedRed:0.0 green:0.0 blue:0.0 alpha:1.0];
+    NSColor *sampled = [NSColor colorWithCalibratedRed:(12.0 / 255.0)
+                                                 green:(34.0 / 255.0)
+                                                  blue:(56.0 / 255.0)
+                                                 alpha:1.0];
+    NSBitmapImageRep *image = nil;
+    [SWImageTools initImageRep:&image withSize:NSMakeSize(1.0, 1.0)];
+    PBSetDisplayPixel(image, 0, 0, 12, 34, 56, 255);
+    [sharedState setForegroundColor:black];
+
+    SWEyeDropperTool *tool = [[[SWEyeDropperTool alloc] initWithToolboxState:state] autorelease];
+    [tool performDrawAtPoint:NSMakePoint(0.0, 0.0)
+               withMainImage:image
+                 bufferImage:nil
+                  mouseEvent:MOUSE_DOWN];
+
+    XCTAssertTrue([SWImageTools color:[state foregroundColor] isEqualToColor:sampled]);
+    XCTAssertTrue([SWImageTools color:[sharedState foregroundColor] isEqualToColor:black]);
+
+    [sharedState setForegroundColor:sharedForeground];
+    [sharedForeground release];
+    [image release];
+}
+
+- (void)testSliderScrollWheelUpdatesBoundLineWidthOwner
+{
+    PBToolboxControllerDouble *controller = [[[PBToolboxControllerDouble alloc] init] autorelease];
+    [controller setLineWidthDisplay:3];
+    SWSlider *slider = [[[SWSlider alloc] initWithFrame:NSMakeRect(0.0, 0.0, 100.0, 20.0)] autorelease];
+    [slider setMinValue:1.0];
+    [slider setMaxValue:10.0];
+    [slider bind:NSValueBinding
+        toObject:controller
+     withKeyPath:@"lineWidthDisplay"
+         options:nil];
+    [slider setIntegerValue:3];
+
+    [slider setScrolledLineWidthDisplay:4];
+
+    XCTAssertEqual([controller lineWidthDisplay], 4);
+    [slider unbind:NSValueBinding];
+}
+
+- (void)testImageDataSourceCanUseExplicitBackgroundColor
+{
+    NSColor *background = [NSColor colorWithCalibratedRed:0.0 green:0.0 blue:1.0 alpha:1.0];
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(1.0, 1.0)
+                                                             backgroundColor:background] autorelease];
+
+    PBAssertPixelEquals([dataSource mainImage], 0, 0, 0, 0, 255, 255);
 }
 
 - (void)testInitImageRepCreatesTransparentBitmap

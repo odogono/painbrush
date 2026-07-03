@@ -29,6 +29,8 @@
 		13A13000000000000000000A /* SWToolboxSurfaceController.m in Sources */ = {isa = PBXBuildFile; fileRef = 13A130000000000000000004 /* SWToolboxSurfaceController.m */; };
 		13A13000000000000000000B /* ToolboxSurface.xib in Resources */ = {isa = PBXBuildFile; fileRef = 13A13000000000000000000E /* ToolboxSurface.xib */; };
 		13A13000000000000000000C /* ToolboxSurface.xib in Resources */ = {isa = PBXBuildFile; fileRef = 13A13000000000000000000E /* ToolboxSurface.xib */; };
+		13A140000000000000000001 /* SWEyeDropperTool.m in Sources */ = {isa = PBXBuildFile; fileRef = 278BF7190D4E47D40046BCA2 /* SWEyeDropperTool.m */; };
+		13A140000000000000000002 /* SWSlider.m in Sources */ = {isa = PBXBuildFile; fileRef = 278D5BBD0E216E7F00C01A52 /* SWSlider.m */; };
 		2706B94D10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		2706B94E10ED77A600080D4A /* DebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 2706B94C10ED77A600080D4A /* DebugLog.m */; };
 		298DD4C7B3E9F87BC9342A98 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 273E0B6D0E32FC2200D11815 /* QuartzCore.framework */; };
@@ -1076,6 +1078,8 @@
 				13A130000000000000000006 /* SWToolboxState.m in Sources */,
 				41C040138BE04E648080A101 /* SWBrushTool.m in Sources */,
 				41C040148BE04E648080A101 /* SWSelectionTool.m in Sources */,
+				13A140000000000000000001 /* SWEyeDropperTool.m in Sources */,
+				13A140000000000000000002 /* SWSlider.m in Sources */,
 				2706B88510ED719500080D4A /* SWCenteringClipView.m in Sources */,
 				AFFB5C3C4AECD04504765B97 /* SWImageTools.m in Sources */,
 			);
@@ -1293,7 +1297,7 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.2.1;
+				CURRENT_PROJECT_VERSION = 2.3.0;
 				FRAMEWORK_SEARCH_PATHS = "$(DEVELOPER_LIBRARY_DIR)/Frameworks";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
@@ -1327,7 +1331,7 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = YES;
-				CURRENT_PROJECT_VERSION = 2.2.1;
+				CURRENT_PROJECT_VERSION = 2.3.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				FRAMEWORK_SEARCH_PATHS = "$(DEVELOPER_LIBRARY_DIR)/Frameworks";
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
@@ -1360,7 +1364,7 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.2.1;
+				CURRENT_PROJECT_VERSION = 2.3.0;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)\"",
@@ -1405,7 +1409,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 2.2.1;
+				CURRENT_PROJECT_VERSION = 2.3.0;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)\"",
@@ -1445,7 +1449,7 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.2.1;
+				CURRENT_PROJECT_VERSION = 2.3.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SUPPORTED_PLATFORMS = macosx;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
@@ -1490,7 +1494,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 2.2.1;
+				CURRENT_PROJECT_VERSION = 2.3.0;
 				SUPPORTED_PLATFORMS = macosx;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
@@ -1533,7 +1537,7 @@
 			buildSettings = {
 				ARCHS = "$(NATIVE_ARCH)";
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2.2.1;
+				CURRENT_PROJECT_VERSION = 2.3.0;
 				GCC_ALTIVEC_EXTENSIONS = YES;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;
@@ -1552,7 +1556,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				CURRENT_PROJECT_VERSION = 2.2.1;
+				CURRENT_PROJECT_VERSION = 2.3.0;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_ENABLE_SSE3_EXTENSIONS = YES;
 				GCC_ENABLE_SUPPLEMENTAL_SSE3_INSTRUCTIONS = YES;

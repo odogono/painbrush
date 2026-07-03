@@ -35,6 +35,8 @@
 	NSRect originalFillMatrixFrame;
 	CGFloat originalContentHeight;
 	NSView *toolboxVisualOverlay;
+	NSView *toolboxSurfaceView;
+	BOOL embeddedSurface;
 
 	// My toolbox -- used to decide which surface controls belong to each tool.
 	SWToolbox *toolbox;
@@ -49,6 +51,7 @@
 - (IBAction)flipColors:(id)sender;
 - (void)switchToScissors:(id)sender;
 - (void)updateInfo;
+- (NSView *)detachedToolboxViewForEmbedding;
 
 @property (readonly) SWToolboxState *toolboxState;
 @property (assign) NSInteger lineWidthDisplay;

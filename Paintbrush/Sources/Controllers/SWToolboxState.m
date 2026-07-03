@@ -30,7 +30,7 @@ NSString * const SWToolboxVisualStateChangedNotification = @"SWToolboxVisualStat
 @synthesize foregroundColor;
 @synthesize backgroundColor;
 
-+ (id)sharedToolboxState
++ (SWToolboxState *)sharedToolboxState
 {
 	static SWToolboxState *sharedState;
 
@@ -53,6 +53,27 @@ NSString * const SWToolboxVisualStateChangedNotification = @"SWToolboxVisualStat
 	}
 
 	return self;
+}
+
+- (id)initWithToolboxState:(SWToolboxState *)state
+{
+	if (self = [self init]) {
+		[self copyValuesFromToolboxState:state];
+	}
+	return self;
+}
+
+- (void)copyValuesFromToolboxState:(SWToolboxState *)state
+{
+	if (!state)
+		return;
+
+	[self setLineWidth:[state lineWidth]];
+	[self setFillStyle:[state fillStyle]];
+	[self setSelectionTransparency:[state selectionTransparency]];
+	[self setCurrentTool:[state currentTool]];
+	[self setForegroundColor:[state foregroundColor]];
+	[self setBackgroundColor:[state backgroundColor]];
 }
 
 - (void)postVisualStateChanged

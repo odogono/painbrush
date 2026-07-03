@@ -34,9 +34,9 @@
 	if (colorClicked != nil) {
 		NSColor *colorClickedConverted = [colorClicked colorUsingColorSpace:[NSColorSpace genericRGBColorSpace]];
 		if (flags & NSAlternateKeyMask) {
-			[[SWToolboxState sharedToolboxState] setBackgroundColor:colorClickedConverted];
+			[toolboxState setBackgroundColor:colorClickedConverted];
 		} else {
-			[[SWToolboxState sharedToolboxState] setForegroundColor:colorClickedConverted];
+			[toolboxState setForegroundColor:colorClickedConverted];
 		}
 	}
 

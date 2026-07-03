@@ -20,9 +20,9 @@
 #import "SWImageDataSource.h"
 #import "SWToolboxState.h"
 
-static NSColor *SWCanvasBackgroundColor(void)
+static NSColor *SWCanvasBackgroundColor(NSColor *preferredColor)
 {
-	NSColor *backgroundColor = [[SWToolboxState sharedToolboxState] backgroundColor];
+	NSColor *backgroundColor = preferredColor ? preferredColor : [[SWToolboxState sharedToolboxState] backgroundColor];
 	return backgroundColor ? backgroundColor : [NSColor clearColor];
 }
 
@@ -63,6 +63,13 @@ static NSColor *SWCanvasBackgroundColor(void)
 
 - (id)initWithSize:(NSSize)sizeIn
 {
+	// Passing nil lets SWCanvasBackgroundColor fall back to the shared toolbox state.
+	return [self initWithSize:sizeIn backgroundColor:nil];
+}
+
+- (id)initWithSize:(NSSize)sizeIn
+   backgroundColor:(NSColor *)backgroundColor
+{
 	self = [super init];
 	if (self)
 	{
@@ -76,7 +83,7 @@ static NSColor *SWCanvasBackgroundColor(void)
 		// New Image: gotta paint the background color
 		SWLockFocus(mainImage);
 
-		NSColor *bgColor = SWCanvasBackgroundColor();
+		NSColor *bgColor = SWCanvasBackgroundColor(backgroundColor);
 		[bgColor setFill];
 
 		NSRect newRect = (NSRect) { NSZeroPoint, sizeIn };
@@ -168,7 +175,7 @@ static NSColor *SWCanvasBackgroundColor(void)
 	}
 	else
 	{
-		NSColor *bgColor = SWCanvasBackgroundColor();
+		NSColor *bgColor = SWCanvasBackgroundColor(nil);
 		[bgColor setFill];
 		NSRectFill(newRect);
 		[mainImage drawAtPoint:NSZeroPoint];

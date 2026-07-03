@@ -116,7 +116,7 @@
 	<key>CFBundleSignature</key>
 	<string>Pbsh</string>
 	<key>CFBundleVersion</key>
-	<string>20260628</string>
+	<string>20260703</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>

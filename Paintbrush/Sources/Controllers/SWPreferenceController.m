@@ -35,6 +35,7 @@
 	NSArray *fileTypes = [SWDocument writableTypes];
 	for (NSString *type in fileTypes)
 		[fileTypeButton addItemWithTitle:type];
+	[self installDockedToolboxPreferenceControl];
 	
 	NSToolbar *toolbar = [[self window] toolbar];
 	[toolbar setSelectedItemIdentifier:[[[toolbar items] objectAtIndex:0] itemIdentifier]];
@@ -53,6 +54,37 @@
 	[undoStepper setIntValue:[[[NSUserDefaults standardUserDefaults] valueForKey:kSWUndoKey] integerValue]];
 	[undoTextField setIntValue:[[[NSUserDefaults standardUserDefaults] valueForKey:kSWUndoKey] integerValue]];
 	[fileTypeButton selectItemWithTitle:[[NSUserDefaults standardUserDefaults] valueForKey:@"FileType"]];
+	[dockToolboxButton setState:([SWAppController dockedToolboxModeEnabled] ? NSOnState : NSOffState)];
+}
+
+- (void)installDockedToolboxPreferenceControl
+{
+	if (dockToolboxButton)
+		return;
+
+	for (NSView *subview in [generalPrefsView subviews]) {
+		if ([subview isKindOfClass:[NSBox class]]) {
+			NSRect separatorFrame = [subview frame];
+			if (NSHeight(separatorFrame) <= 6.0) {
+				separatorFrame.origin.y = 56.0;
+				[subview setFrame:separatorFrame];
+			}
+		}
+	}
+
+	dockToolboxButton = [[NSButton alloc] initWithFrame:NSMakeRect(36.0, 64.0, 378.0, 18.0)];
+	[dockToolboxButton setButtonType:NSSwitchButton];
+	[dockToolboxButton setTitle:@"Dock Toolbox in document windows"];
+	[dockToolboxButton setFont:[NSFont systemFontOfSize:13.0]];
+	[dockToolboxButton setTarget:self];
+	[dockToolboxButton setAction:@selector(changeDockedToolboxMode:)];
+	[dockToolboxButton setState:([SWAppController dockedToolboxModeEnabled] ? NSOnState : NSOffState)];
+	[generalPrefsView addSubview:dockToolboxButton];
+}
+
+- (IBAction)changeDockedToolboxMode:(id)sender
+{
+	[SWAppController setDockedToolboxModeEnabled:([sender state] == NSOnState)];
 }
 
 // Sets the default fileType for new documents (can always be set in the save dialog, however)
@@ -159,5 +191,10 @@
 	return selectable;
 }
 
+- (void)dealloc
+{
+	[dockToolboxButton release];
+	[super dealloc];
+}
 
 @end

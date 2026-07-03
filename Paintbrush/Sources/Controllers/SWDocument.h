@@ -25,6 +25,8 @@
 @class SWTool;
 @class SWToolbox;
 @class SWToolboxController;
+@class SWToolboxSurfaceController;
+@class SWToolboxState;
 @class SWSizeWindowController;
 @class SWResizeWindowController;
 @class SWCenteringClipView;
@@ -45,11 +47,14 @@
 	// A bunch of controllers and one view
 	SWToolboxController *toolboxController;
 	SWToolbox *toolbox;
+	SWToolboxState *documentToolboxState;
 	SWCenteringClipView *clipView;
 	SWTextToolWindowController *textController;
 	SWSizeWindowController *sizeController;
 	SWResizeWindowController *resizeController;
 	SWSavePanelAccessoryViewController *savePanelAccessoryViewController;
+	SWToolboxSurfaceController *dockedToolboxController;
+	NSView *dockedToolboxView;
 	
 	// Misc other member variables
 	NSNotificationCenter *nc;
@@ -83,6 +88,12 @@
 - (IBAction)raiseSizeSheet:(id)sender;
 - (IBAction)raiseResizeSheet:(id)sender;
 - (void)setUpPaintView;
+- (void)updateToolboxHosting;
+- (SWToolboxState *)documentToolboxState;
+- (SWToolboxState *)activeToolboxState;
+- (void)copySharedToolboxStateIntoDocumentState;
+- (void)copyDocumentToolboxStateIntoSharedState;
+- (void)useCurrentToolboxHostingState;
 
 // Undo
 - (void)registerDrawingUndo;

@@ -23,6 +23,8 @@
 #import "SWCenteringClipView.h"
 #import "SWToolbox.h"
 #import "SWToolboxController.h"
+#import "SWToolboxSurfaceController.h"
+#import "SWToolboxState.h"
 #import "SWTextToolWindowController.h"
 #import "SWSizeWindowController.h"
 #import "SWResizeWindowController.h"
@@ -33,6 +35,8 @@
 #import "SWImageDataSource.h"
 
 @implementation SWDocument
+
+static const CGFloat kSWDockedToolboxWidth = 72.0;
 
 // Synthesize our properties here
 @synthesize toolbox;
@@ -55,16 +59,34 @@ static BOOL kSWDocumentWillShowSheet = YES;
 			   selector:@selector(undoLevelChanged:) 
 				   name:kSWUndoKey 
 				 object:nil];
+		[nc addObserver:self
+			   selector:@selector(toolboxHostingChanged:)
+				   name:kSWDockedToolboxPreferenceChangedNotification
+				 object:nil];
+		[nc addObserver:self
+			   selector:@selector(toolboxVisibilityChanged:)
+				   name:kSWDockedToolboxVisibilityChangedNotification
+				 object:nil];
 		
 		// Set levels of undos based on user defaults
 		NSNumber *undo = [[NSUserDefaults standardUserDefaults] objectForKey:kSWUndoKey];
 		[[self undoManager] setLevelsOfUndo:[undo integerValue]];
 		
 		// Create my window's particular tools
-		toolbox = [[SWToolbox alloc] initWithDocument:self];
+		documentToolboxState = [[SWToolboxState alloc] init];
+		toolbox = [[SWToolbox alloc] initWithDocument:self toolboxState:[self activeToolboxState]];
 		
 	}
     return self;
+}
+
+- (void)discardDockedToolbox
+{
+	[dockedToolboxView removeFromSuperview];
+	[dockedToolboxView release];
+	dockedToolboxView = nil;
+	[dockedToolboxController release];
+	dockedToolboxController = nil;
 }
 
 
@@ -78,6 +100,8 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	[textController release];
 	[savePanelAccessoryViewController removeObserver:self forKeyPath:kSWCurrentFileType];
 	[savePanelAccessoryViewController release];
+	[self discardDockedToolbox];
+	[documentToolboxState release];
 	[toolbox release];
 	[dataSource release];
 	[super dealloc];
@@ -136,6 +160,123 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	}
 	
 	[paintView setBackgroundColor:[NSColor clearColor]];
+	[self updateToolboxHosting];
+}
+
+- (void)toolboxHostingChanged:(NSNotification *)notification
+{
+#pragma unused(notification)
+	[self useCurrentToolboxHostingState];
+}
+
+- (void)toolboxVisibilityChanged:(NSNotification *)notification
+{
+#pragma unused(notification)
+	// Visibility toggles never change the active toolbox state, so we only
+	// need to show/hide the docked surface, not rebuild the hosting state.
+	[self updateToolboxHosting];
+}
+
+- (SWToolboxState *)documentToolboxState
+{
+	return documentToolboxState;
+}
+
+- (SWToolboxState *)activeToolboxState
+{
+	if ([SWAppController dockedToolboxModeEnabled])
+		return documentToolboxState;
+	return [SWToolboxState sharedToolboxState];
+}
+
+- (void)copySharedToolboxStateIntoDocumentState
+{
+	[documentToolboxState copyValuesFromToolboxState:[SWToolboxState sharedToolboxState]];
+}
+
+- (void)copyDocumentToolboxStateIntoSharedState
+{
+	[[SWToolboxState sharedToolboxState] copyValuesFromToolboxState:documentToolboxState];
+}
+
+- (void)useCurrentToolboxHostingState
+{
+	SWToolboxState *activeState = [self activeToolboxState];
+	if ([toolbox toolboxState] != activeState) {
+		SWToolbox *newToolbox = [[SWToolbox alloc] initWithDocument:self toolboxState:activeState];
+		SWToolbox *oldToolbox = toolbox;
+		[oldToolbox tieUpLooseEndsForCurrentTool];
+		toolbox = newToolbox;
+		if (paintView)
+			[paintView setToolbox:toolbox];
+		[oldToolbox release];
+	}
+
+	if (dockedToolboxController &&
+		(![SWAppController dockedToolboxModeEnabled] || [dockedToolboxController toolboxState] != activeState)) {
+		[self discardDockedToolbox];
+	}
+
+	[self updateToolboxHosting];
+}
+
+- (void)layoutDocumentContentWithDockedToolboxVisible:(BOOL)toolboxVisible
+{
+	NSView *contentView = [scrollView superview];
+	if (!contentView)
+		return;
+
+	NSRect bounds = [contentView bounds];
+	if (toolboxVisible) {
+		NSRect toolboxFrame = NSMakeRect(0.0, 0.0, kSWDockedToolboxWidth, NSHeight(bounds));
+		NSRect scrollFrame = NSMakeRect(kSWDockedToolboxWidth,
+										0.0,
+										MAX(0.0, NSWidth(bounds) - kSWDockedToolboxWidth),
+										NSHeight(bounds));
+		[dockedToolboxView setFrame:toolboxFrame];
+		[dockedToolboxView setAutoresizingMask:(NSViewHeightSizable | NSViewMaxXMargin)];
+		[scrollView setFrame:scrollFrame];
+		[scrollView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
+	} else {
+		[scrollView setFrame:bounds];
+		[scrollView setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];
+	}
+}
+
+- (void)installDockedToolbox
+{
+	NSView *contentView = [scrollView superview];
+	if (!contentView)
+		return;
+
+	if (!dockedToolboxController) {
+		dockedToolboxController = [[SWToolboxSurfaceController alloc] initWithToolboxState:documentToolboxState
+																			windowNibName:@"ToolboxSurface"];
+		dockedToolboxView = [[dockedToolboxController detachedToolboxViewForEmbedding] retain];
+	}
+
+	if (![dockedToolboxView superview])
+		[contentView addSubview:dockedToolboxView positioned:NSWindowBelow relativeTo:scrollView];
+
+	[self layoutDocumentContentWithDockedToolboxVisible:YES];
+}
+
+- (void)removeDockedToolbox
+{
+	[dockedToolboxView removeFromSuperview];
+	[self layoutDocumentContentWithDockedToolboxVisible:NO];
+}
+
+- (void)updateToolboxHosting
+{
+	if (!scrollView)
+		return;
+
+	if ([SWAppController dockedToolboxModeEnabled] && [SWAppController dockedToolboxVisible]) {
+		[self installDockedToolbox];
+	} else {
+		[self removeDockedToolbox];
+	}
 }
 
 
@@ -203,7 +344,8 @@ static BOOL kSWDocumentWillShowSheet = YES;
 		NSAssert(dataSource == nil, @"We can't already have a DataSource when creating a document!");
 
 		// Create the data source
-		dataSource = [[SWImageDataSource alloc] initWithSize:openingSize];
+		dataSource = [[SWImageDataSource alloc] initWithSize:openingSize
+											 backgroundColor:[[self activeToolboxState] backgroundColor]];
 
 		// Initial creation
 		[self setUpPaintView];

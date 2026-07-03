@@ -65,6 +65,7 @@ typedef enum
 
 
 - (NSPoint)savedPoint;
+- (CGFloat)lineWidth;
 - (NSColor *)drawingColor;
 - (void)setSavedPoint:(NSPoint)aPoint;
 - (void)tieUpLooseEnds;

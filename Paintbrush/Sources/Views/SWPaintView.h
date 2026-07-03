@@ -53,6 +53,7 @@
 
 - (void)preparePaintViewWithDataSource:(SWImageDataSource *)ds
 							   toolbox:(SWToolbox *)tb;
+- (void)setToolbox:(SWToolbox *)tb;
 - (NSRect)calculateWindowBounds:(NSRect)frameRect;
 - (void)setBackgroundColor:(NSColor *)color;
 - (void)clearOverlay;

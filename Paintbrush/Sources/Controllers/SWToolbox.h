@@ -27,12 +27,14 @@
 {
 	NSMutableDictionary *toolList;
 	SWToolboxState *toolboxState;
+	SWDocument *document;
 	
 	// The currently-selected tool
 	SWTool *currentTool;
 }
 
 @property (retain,nonatomic) SWTool *currentTool;
+@property (readonly) SWToolboxState *toolboxState;
 
 - (id)initWithDocument:(SWDocument *)doc;
 - (id)initWithDocument:(SWDocument *)doc toolboxState:(SWToolboxState *)state;

@@ -45,6 +45,20 @@ static const CGFloat kSWDockedToolboxWidth = 72.0;
 // TODO: Nasty hack
 static BOOL kSWDocumentWillShowSheet = YES;
 
++ (NSArray *)writableTypes
+{
+	return [NSArray arrayWithObjects:@"PNG", @"JPEG", @"GIF", @"BMP", @"TIFF", nil];
+}
+
+- (SWSelectionTool *)switchToSelectionTool
+{
+	[[toolbox toolboxState] setCurrentTool:@"Selection"];
+
+	if ([[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+		return (SWSelectionTool *)[toolbox currentTool];
+	return nil;
+}
+
 - (id)init
 {
     if (self = [super init]) 
@@ -759,37 +773,50 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	[self writeImageToPasteboard:[NSPasteboard generalPasteboard]];
 }
 
+- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image atCanvasOrigin:(NSPoint)origin
+{
+	if (!image || [image pixelsWide] <= 0 || [image pixelsHigh] <= 0)
+		return NO;
+
+	SWSelectionTool *selectionTool = [self switchToSelectionTool];
+	if (!selectionTool)
+		return NO;
+
+	// Prepare for an insertion by allowing an undo.
+	[self registerDrawingUndo];
+
+	if (origin.x < 0)
+		origin.x = 0;
+	if (origin.y < 0)
+		origin.y = 0;
+	origin.x = floor(origin.x);
+	origin.y = floor(origin.y);
+
+	NSRect rect = NSZeroRect;
+	rect.origin = origin;
+	rect.size = NSMakeSize(ceil([image size].width), ceil([image size].height));
+
+	[SWImageTools clearImage:[dataSource bufferImage]];
+
+	[selectionTool setClippingRect:rect
+						  forImage:image
+					   bufferImage:[dataSource bufferImage]
+					 withMainImage:[dataSource mainImage]];
+	[paintView setNeedsDisplay:YES];
+	return YES;
+}
+
 
 // Paste
 - (IBAction)paste:(id)sender
 {
-	// Prepare for a paste by allowing an undo
-	[self registerDrawingUndo];
-	[toolboxController switchToScissors:nil];
-	
 	NSData *data = [SWImageTools readImageFromPasteboard:[NSPasteboard generalPasteboard]];
 	if (data)
 	{
-		[paintView cursorUpdate:nil];
 		NSBitmapImageRep *temp = [SWImageTools imageRepWithPasteboardImageData:data];
 
 		NSPoint origin = [[paintView superview] bounds].origin;
-		if (origin.x < 0) origin.x = 0;
-		if (origin.y < 0) origin.y = 0;
-
-		NSRect rect = NSZeroRect;
-		rect.origin = origin;
-
-		// Use ceiling because pixels can be fractions, but the tool assumes integer values								 
-		rect.size = NSMakeSize(ceil([temp size].width), ceil([temp size].height));
-		
-		[SWImageTools clearImage:[dataSource bufferImage]];
-
-		[(SWSelectionTool *)[toolbox currentTool] setClippingRect:rect
-														 forImage:temp
-													  bufferImage:[dataSource bufferImage]
-													withMainImage:[dataSource mainImage]];
-		[paintView setNeedsDisplay:YES];
+		[self insertImageRepAsSelection:temp atCanvasOrigin:origin];
 	}
 }
 
@@ -797,13 +824,15 @@ static BOOL kSWDocumentWillShowSheet = YES;
 // Select all
 - (IBAction)selectAll:(id)sender
 {
-	[toolboxController switchToScissors:nil];
+	SWSelectionTool *selectionTool = [self switchToSelectionTool];
+	if (!selectionTool)
+		return;
 	
-	[[toolbox currentTool] setSavedPoint:NSZeroPoint];
-	[[toolbox currentTool] performDrawAtPoint:NSMakePoint([paintView bounds].size.width, [paintView bounds].size.height)
-								withMainImage:[dataSource mainImage] 
-								  bufferImage:[dataSource bufferImage] 
-								   mouseEvent:MOUSE_UP];
+	[selectionTool setSavedPoint:NSZeroPoint];
+	[selectionTool performDrawAtPoint:NSMakePoint([paintView bounds].size.width, [paintView bounds].size.height)
+						withMainImage:[dataSource mainImage]
+						  bufferImage:[dataSource bufferImage]
+						   mouseEvent:MOUSE_UP];
 	
 	[paintView cursorUpdate:nil];
 	[paintView setNeedsDisplay:YES];

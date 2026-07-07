@@ -1313,7 +1313,7 @@
 					"@loader_path/../Frameworks",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.PaintbrushTests;
 				PRODUCT_MODULE_NAME = Test;
 				PRODUCT_NAME = Test;
@@ -1346,7 +1346,7 @@
 					"@loader_path/../Frameworks",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.PaintbrushTests;
 				PRODUCT_MODULE_NAME = Test;
 				PRODUCT_NAME = Test;
@@ -1384,7 +1384,7 @@
 				INFOPLIST_FILE = "Paintbrush/Supporting Files/Info-AppStore.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DDEBUG",
@@ -1429,7 +1429,7 @@
 				INFOPLIST_FILE = "Paintbrush/Supporting Files/Info-AppStore.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = "-DAPPSTORE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
 				PRODUCT_MODULE_NAME = Paintbrush;
@@ -1453,7 +1453,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SUPPORTED_PLATFORMS = macosx;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/Paintbrush/Sources/**";
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1497,7 +1497,7 @@
 				CURRENT_PROJECT_VERSION = 2.3.0;
 				SUPPORTED_PLATFORMS = macosx;
 				PRODUCT_BUNDLE_IDENTIFIER = com.soggywaffles.Paintbrush;
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/Paintbrush/Sources/**";
 				ALWAYS_SEARCH_USER_PATHS = NO;

@@ -40,6 +40,9 @@
 + (void)stripImage:(NSBitmapImageRep *)imageRep ofColor:(NSColor *)color;
 + (NSData *)readImageFromPasteboard:(NSPasteboard *)pb;
 + (NSBitmapImageRep *)imageRepWithPasteboardImageData:(NSData *)data;
++ (NSBitmapImageRep *)imageRepWithExternalImageAtURL:(NSURL *)url;
++ (BOOL)canDecodeImageFileAtURL:(NSURL *)url;
++ (NSURL *)firstImageFileURLFromPasteboard:(NSPasteboard *)pb;
 + (NSBitmapImageRep *)cropImage:(NSBitmapImageRep *)image toRect:(NSRect)rect;
 
 // User requested feature!

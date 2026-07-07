@@ -98,7 +98,7 @@ static NSColor *SWCanvasBackgroundColor(NSColor *preferredColor)
 - (id)initWithURL:(NSURL *)url
 {
 	// Temporary image to get dimensions
-	NSBitmapImageRep *tempImage = (NSBitmapImageRep *)[NSBitmapImageRep imageRepWithContentsOfURL:url];
+	NSBitmapImageRep *tempImage = [SWImageTools imageRepWithExternalImageAtURL:url];
 	
 	if (!tempImage)	// failure case
 		return nil;
@@ -108,10 +108,6 @@ static NSColor *SWCanvasBackgroundColor(NSColor *preferredColor)
 	
 	// Copy the image to the mainImage
 	[SWImageTools drawToImage:mainImage fromImage:tempImage withComposition:NO];
-	
-	// Flip it, since our views are all flipped
-	if (mainImage)
-		[SWImageTools flipImageVertical:mainImage];		
 	
 	return self;
 }

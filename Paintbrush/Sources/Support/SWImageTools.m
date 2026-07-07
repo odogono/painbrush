@@ -20,8 +20,19 @@
 #import "SWImageTools.h"
 #import "SWDocument.h"
 #import <CoreImage/CoreImage.h>
+#import <ImageIO/ImageIO.h>
 #import <QuartzCore/QuartzCore.h>
+#import <math.h>
 
+static BOOL SWURLHasSVGExtension(NSURL *url)
+{
+	return [[[url pathExtension] lowercaseString] isEqualToString:@"svg"];
+}
+
+static BOOL SWImageSizeIsValid(NSSize size)
+{
+	return isfinite(size.width) && isfinite(size.height) && size.width > 0.0 && size.height > 0.0;
+}
 
 @implementation SWImageTools
 
@@ -331,12 +342,146 @@
 	return data;
 }
 
++ (NSBitmapImageRep *)imageRepInPaintbrushFormat:(NSBitmapImageRep *)image
+{
+	if (!image)
+		return nil;
+	// bitmapFormat 0 is the canonical layout initImageRep: produces: alpha-last,
+	// premultiplied, integer samples. initWithCGImage: can hand back alpha-first
+	// (ARGB) or non-premultiplied reps that match every other attribute but would
+	// be misread by the raw-byte pixel code, so those must be normalized below.
+	if (![image isPlanar] && [image samplesPerPixel] == 4 && [image bitsPerSample] == 8 && [image bitsPerPixel] == 32 && [image hasAlpha] && [image bitmapFormat] == 0)
+		return image;
+
+	NSBitmapImageRep *normalizedImage = nil;
+	[SWImageTools initImageRep:&normalizedImage withSize:NSMakeSize([image pixelsWide], [image pixelsHigh])];
+	[SWImageTools drawToImage:normalizedImage fromImage:image withComposition:NO];
+	return [normalizedImage autorelease];
+}
+
 + (NSBitmapImageRep *)imageRepWithPasteboardImageData:(NSData *)data
 {
-	NSBitmapImageRep *image = [[[NSBitmapImageRep alloc] initWithData:data] autorelease];
+	NSBitmapImageRep *image = nil;
+	CGImageSourceRef source = CGImageSourceCreateWithData((CFDataRef)data, NULL);
+	if (source && CGImageSourceGetType(source))
+	{
+		CGImageRef cgImage = CGImageSourceCreateImageAtIndex(source, 0, NULL);
+		if (cgImage)
+		{
+			image = [[[NSBitmapImageRep alloc] initWithCGImage:cgImage] autorelease];
+			CGImageRelease(cgImage);
+		}
+	}
+	if (source)
+		CFRelease(source);
+	if (!image)
+		image = [[[NSBitmapImageRep alloc] initWithData:data] autorelease];
 	if (image)
+	{
+		image = [SWImageTools imageRepInPaintbrushFormat:image];
 		[SWImageTools flipImageVertical:image];
+	}
 	return image;
+}
+
++ (NSBitmapImageRep *)imageRepWithSVGAtURL:(NSURL *)url
+{
+	if (![url isFileURL])
+		return nil;
+
+	NSImage *image = [[[NSImage alloc] initWithContentsOfURL:url] autorelease];
+	if (!image)
+	{
+		NSData *data = [NSData dataWithContentsOfURL:url];
+		if (data)
+			image = [[[NSImage alloc] initWithData:data] autorelease];
+	}
+	if (!image || !SWImageSizeIsValid([image size]))
+		return nil;
+
+	NSSize pixelSize = NSMakeSize(ceil([image size].width), ceil([image size].height));
+	if (!SWImageSizeIsValid(pixelSize))
+		return nil;
+
+	NSBitmapImageRep *imageRep = nil;
+	[SWImageTools initImageRep:&imageRep withSize:pixelSize];
+	if (!imageRep)
+		return nil;
+
+	[NSGraphicsContext saveGraphicsState];
+	[NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithBitmapImageRep:imageRep]];
+	[[NSGraphicsContext currentContext] setCompositingOperation:NSCompositeCopy];
+	[image drawInRect:NSMakeRect(0.0, 0.0, pixelSize.width, pixelSize.height)
+			 fromRect:NSZeroRect
+			operation:NSCompositeCopy
+			 fraction:1.0];
+	[NSGraphicsContext restoreGraphicsState];
+
+	[SWImageTools flipImageVertical:imageRep];
+	return [imageRep autorelease];
+}
+
++ (NSBitmapImageRep *)imageRepWithExternalImageAtURL:(NSURL *)url
+{
+	if (![url isFileURL])
+		return nil;
+
+	NSData *data = [NSData dataWithContentsOfURL:url];
+	if (!data)
+		return nil;
+
+	NSBitmapImageRep *image = [SWImageTools imageRepWithPasteboardImageData:data];
+	if (!image && SWURLHasSVGExtension(url))
+		image = [SWImageTools imageRepWithSVGAtURL:url];
+	return image;
+}
+
+// Cheap check for the drag hot path: reads only the file header, never decodes
+// pixels. draggingUpdated: calls this on every mouse-move tick, so a full decode
+// per candidate would be wasteful; the actual decode happens once, on drop.
++ (BOOL)canDecodeImageFileAtURL:(NSURL *)url
+{
+	if (![url isFileURL])
+		return NO;
+
+	CGImageSourceRef source = CGImageSourceCreateWithURL((CFURLRef)url, NULL);
+	BOOL decodable = (source != NULL && CGImageSourceGetType(source) != NULL && CGImageSourceGetCount(source) > 0);
+	if (source)
+		CFRelease(source);
+	if (!decodable && SWURLHasSVGExtension(url))
+	{
+		NSImage *image = [[[NSImage alloc] initWithContentsOfURL:url] autorelease];
+		if (!image)
+		{
+			NSData *data = [NSData dataWithContentsOfURL:url];
+			if (data)
+				image = [[[NSImage alloc] initWithData:data] autorelease];
+		}
+		decodable = (image != nil && SWImageSizeIsValid([image size]));
+	}
+	return decodable;
+}
+
++ (NSURL *)firstImageFileURLFromPasteboard:(NSPasteboard *)pb
+{
+	NSArray *urls = [pb readObjectsForClasses:[NSArray arrayWithObject:[NSURL class]]
+									  options:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES]
+																		  forKey:NSPasteboardURLReadingFileURLsOnlyKey]];
+	for (NSURL *url in urls)
+	{
+		if ([SWImageTools canDecodeImageFileAtURL:url])
+			return url;
+	}
+
+	NSArray *fileNames = [pb propertyListForType:NSFilenamesPboardType];
+	for (NSString *fileName in fileNames)
+	{
+		NSURL *url = [NSURL fileURLWithPath:fileName];
+		if ([SWImageTools canDecodeImageFileAtURL:url])
+			return url;
+	}
+
+	return nil;
 }
 
 

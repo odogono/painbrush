@@ -90,6 +90,49 @@ final class SWSelectionTest: XCTestCase {
         assertDisplayPixel(canvas, x: 1, y: 1, red: 0, green: 0, blue: 255, alpha: 255)
     }
 
+    func testPastedSelectionTransparentPixelsDoNotOverwriteCanvasOnCommit() {
+        let canvas = makeImage(width: 2, height: 1)
+        setDisplayPixel(canvas, x: 0, y: 0, red: 0, green: 255, blue: 0, alpha: 255)
+        setDisplayPixel(canvas, x: 1, y: 0, red: 255, green: 255, blue: 255, alpha: 255)
+        let pastedImage = makeImage(width: 2, height: 1)
+        setDisplayPixel(pastedImage, x: 0, y: 0, red: 0, green: 0, blue: 0, alpha: 0)
+        setDisplayPixel(pastedImage, x: 1, y: 0, red: 0, green: 0, blue: 255, alpha: 128)
+
+        let selection = SWSelection(
+            pastedImage: pastedImage,
+            origin: .zero,
+            backgroundColor: .white,
+            omitBackground: false
+        )
+        selection.commit(toCanvasImage: canvas)
+
+        assertDisplayPixel(canvas, x: 0, y: 0, red: 0, green: 255, blue: 0, alpha: 255)
+        assertDisplayPixel(canvas, x: 1, y: 0, red: 0, green: 0, blue: 255, alpha: 128)
+    }
+
+    func testPastedSelectionBackgroundOmissionDoesNotReplaceRealTransparency() {
+        let canvas = makeImage(width: 3, height: 1)
+        setDisplayPixel(canvas, x: 0, y: 0, red: 0, green: 255, blue: 0, alpha: 255)
+        setDisplayPixel(canvas, x: 1, y: 0, red: 32, green: 64, blue: 96, alpha: 255)
+        setDisplayPixel(canvas, x: 2, y: 0, red: 255, green: 255, blue: 255, alpha: 255)
+        let pastedImage = makeImage(width: 3, height: 1)
+        setDisplayPixel(pastedImage, x: 0, y: 0, red: 255, green: 255, blue: 255, alpha: 255)
+        setDisplayPixel(pastedImage, x: 1, y: 0, red: 0, green: 0, blue: 0, alpha: 0)
+        setDisplayPixel(pastedImage, x: 2, y: 0, red: 255, green: 0, blue: 0, alpha: 255)
+
+        let selection = SWSelection(
+            pastedImage: pastedImage,
+            origin: .zero,
+            backgroundColor: .white,
+            omitBackground: true
+        )
+        selection.commit(toCanvasImage: canvas)
+
+        assertDisplayPixel(canvas, x: 0, y: 0, red: 0, green: 255, blue: 0, alpha: 255)
+        assertDisplayPixel(canvas, x: 1, y: 0, red: 32, green: 64, blue: 96, alpha: 255)
+        assertDisplayPixel(canvas, x: 2, y: 0, red: 255, green: 0, blue: 0, alpha: 255)
+    }
+
     func testPastedSelectionPreservesDisplayOrientationWhenCommitted() {
         let canvas = makeImage(width: 2, height: 2)
         let pastedImage = makeImage(width: 2, height: 2)

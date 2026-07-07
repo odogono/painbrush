@@ -130,6 +130,15 @@ static void PBAssertDisplayPixelEquals(NSBitmapImageRep *image, NSInteger x, NSI
     XCTAssertEqual(pixel[3], alpha, @"alpha channel mismatch at display (%ld, %ld)", (long)x, (long)y);
 }
 
+static void PBAssertDisplayPixelApproximatelyEquals(NSBitmapImageRep *image, NSInteger x, NSInteger y, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha, NSInteger tolerance)
+{
+    unsigned char *pixel = PBDisplayPixelAt(image, x, y);
+    XCTAssertLessThanOrEqual(labs((long)pixel[0] - red), tolerance, @"red channel mismatch at display (%ld, %ld)", (long)x, (long)y);
+    XCTAssertLessThanOrEqual(labs((long)pixel[1] - green), tolerance, @"green channel mismatch at display (%ld, %ld)", (long)x, (long)y);
+    XCTAssertLessThanOrEqual(labs((long)pixel[2] - blue), tolerance, @"blue channel mismatch at display (%ld, %ld)", (long)x, (long)y);
+    XCTAssertLessThanOrEqual(labs((long)pixel[3] - alpha), tolerance, @"alpha channel mismatch at display (%ld, %ld)", (long)x, (long)y);
+}
+
 static NSData *PBCanvasData(SWImageDataSource *dataSource)
 {
     return [[dataSource mainImage] TIFFRepresentation];
@@ -161,6 +170,40 @@ static BOOL PBImageHasOpaquePixelInRect(NSBitmapImageRep *image, NSRect rect)
         }
     }
     return NO;
+}
+
+static NSURL *PBTemporaryFileURL(NSString *extension)
+{
+    NSString *fileName = [NSString stringWithFormat:@"%@.%@", [[NSUUID UUID] UUIDString], extension];
+    return [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:fileName]];
+}
+
+static NSString *PBValidSVGString(void)
+{
+    return @"<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"2\" height=\"2\" viewBox=\"0 0 2 2\"><rect x=\"0\" y=\"0\" width=\"1\" height=\"2\" fill=\"#ff0000\"/><rect x=\"1\" y=\"0\" width=\"1\" height=\"2\" fill=\"#00ff00\"/></svg>";
+}
+
+static NSURL *PBWriteSVGString(NSString *svgString)
+{
+    NSURL *url = PBTemporaryFileURL(@"svg");
+    [svgString writeToURL:url
+               atomically:YES
+                 encoding:NSUTF8StringEncoding
+                    error:nil];
+    return url;
+}
+
+static NSData *PBWebPImageData(void)
+{
+    return [[[NSData alloc] initWithBase64EncodedString:@"UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AA/vuUAAA="
+                                                options:0] autorelease];
+}
+
+static void PBWritePNGImage(NSBitmapImageRep *image, NSURL *url)
+{
+    NSData *data = [image representationUsingType:NSPNGFileType
+                                       properties:[NSDictionary dictionary]];
+    [data writeToURL:url atomically:YES];
 }
 
 @interface PBFlippedImageRenderView : NSView
@@ -1102,6 +1145,168 @@ static SWSelectionTool *PBMakeSelectionToolWithoutBackgroundColor(void)
     PBAssertPixelEquals(internalImage, 2, 4, 0, 255, 0, 255);
 
     [externalImage release];
+}
+
+- (void)testExternalImageFileConvertsRowsToCanvasOrientation
+{
+    NSBitmapImageRep *externalImage = nil;
+    [SWImageTools initImageRep:&externalImage withSize:NSMakeSize(2.0, 2.0)];
+    PBSetPixel(externalImage, 0, 0, 255, 0, 0, 255);
+    PBSetPixel(externalImage, 1, 0, 0, 255, 0, 255);
+    PBSetPixel(externalImage, 0, 1, 0, 0, 255, 255);
+    PBSetPixel(externalImage, 1, 1, 255, 255, 0, 255);
+    NSURL *url = PBTemporaryFileURL(@"png");
+    PBWritePNGImage(externalImage, url);
+
+    NSBitmapImageRep *internalImage = [SWImageTools imageRepWithExternalImageAtURL:url];
+
+    PBAssertDisplayPixelEquals(internalImage, 0, 0, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals(internalImage, 1, 0, 0, 255, 0, 255);
+    PBAssertDisplayPixelEquals(internalImage, 0, 1, 0, 0, 255, 255);
+    PBAssertDisplayPixelEquals(internalImage, 1, 1, 255, 255, 0, 255);
+
+    [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+    [externalImage release];
+}
+
+- (void)testWebPImageDataDecodesThroughNativeImageIO
+{
+    NSBitmapImageRep *image = [SWImageTools imageRepWithPasteboardImageData:PBWebPImageData()];
+
+	XCTAssertNotNil(image);
+	XCTAssertEqual([image pixelsWide], 1);
+	XCTAssertEqual([image pixelsHigh], 1);
+	XCTAssertEqual([image samplesPerPixel], 4);
+	XCTAssertEqual([image bitsPerPixel], 32);
+	XCTAssertTrue([image hasAlpha]);
+}
+
+- (void)testImageDataSourceOpensWebPFiles
+{
+    NSURL *webPURL = PBTemporaryFileURL(@"webp");
+    [PBWebPImageData() writeToURL:webPURL atomically:YES];
+
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithURL:webPURL] autorelease];
+
+    XCTAssertNotNil(dataSource);
+    XCTAssertEqual([dataSource size].width, 1.0);
+    XCTAssertEqual([dataSource size].height, 1.0);
+
+	[[NSFileManager defaultManager] removeItemAtURL:webPURL error:nil];
+}
+
+- (void)testSVGImageFileDecodesAsBitmap
+{
+    NSURL *svgURL = PBWriteSVGString(PBValidSVGString());
+
+    NSBitmapImageRep *image = [SWImageTools imageRepWithExternalImageAtURL:svgURL];
+
+    XCTAssertNotNil(image);
+    XCTAssertEqual([image pixelsWide], 2);
+    XCTAssertEqual([image pixelsHigh], 2);
+    XCTAssertEqual([image samplesPerPixel], 4);
+    XCTAssertTrue([image hasAlpha]);
+    PBAssertDisplayPixelApproximatelyEquals(image, 0, 0, 255, 0, 0, 255, 40);
+    PBAssertDisplayPixelApproximatelyEquals(image, 1, 0, 0, 255, 0, 255, 40);
+    PBAssertDisplayPixelApproximatelyEquals(image, 0, 1, 255, 0, 0, 255, 40);
+    PBAssertDisplayPixelApproximatelyEquals(image, 1, 1, 0, 255, 0, 255, 40);
+
+    [[NSFileManager defaultManager] removeItemAtURL:svgURL error:nil];
+}
+
+- (void)testImageDataSourceOpensSVGFiles
+{
+    NSURL *svgURL = PBWriteSVGString(PBValidSVGString());
+
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithURL:svgURL] autorelease];
+
+    XCTAssertNotNil(dataSource);
+    XCTAssertEqual([dataSource size].width, 2.0);
+    XCTAssertEqual([dataSource size].height, 2.0);
+
+    [[NSFileManager defaultManager] removeItemAtURL:svgURL error:nil];
+}
+
+- (void)testFirstImageFileURLFromPasteboardSkipsUnsupportedFiles
+{
+    NSURL *textURL = PBTemporaryFileURL(@"txt");
+    NSURL *imageURL = PBTemporaryFileURL(@"png");
+    [@"not an image" writeToURL:textURL
+                     atomically:YES
+                       encoding:NSUTF8StringEncoding
+                          error:nil];
+    NSBitmapImageRep *externalImage = nil;
+    [SWImageTools initImageRep:&externalImage withSize:NSMakeSize(1.0, 1.0)];
+    PBSetPixel(externalImage, 0, 0, 255, 0, 0, 255);
+    PBWritePNGImage(externalImage, imageURL);
+    NSPasteboard *pasteboard = [NSPasteboard pasteboardWithUniqueName];
+    [pasteboard clearContents];
+    [pasteboard writeObjects:[NSArray arrayWithObjects:textURL, imageURL, nil]];
+
+    NSURL *selectedURL = [SWImageTools firstImageFileURLFromPasteboard:pasteboard];
+
+    XCTAssertEqualObjects([selectedURL path], [imageURL path]);
+
+    [[NSFileManager defaultManager] removeItemAtURL:textURL error:nil];
+    [[NSFileManager defaultManager] removeItemAtURL:imageURL error:nil];
+    [externalImage release];
+}
+
+- (void)testFirstImageFileURLFromPasteboardAcceptsWebPFiles
+{
+    NSURL *webPURL = PBTemporaryFileURL(@"webp");
+    [PBWebPImageData() writeToURL:webPURL atomically:YES];
+    NSPasteboard *pasteboard = [NSPasteboard pasteboardWithUniqueName];
+    [pasteboard clearContents];
+    [pasteboard writeObjects:[NSArray arrayWithObject:webPURL]];
+
+    NSURL *selectedURL = [SWImageTools firstImageFileURLFromPasteboard:pasteboard];
+
+    XCTAssertEqualObjects([selectedURL path], [webPURL path]);
+
+    [[NSFileManager defaultManager] removeItemAtURL:webPURL error:nil];
+}
+
+- (void)testFirstImageFileURLFromPasteboardAcceptsSVGFiles
+{
+    NSURL *svgURL = PBWriteSVGString(PBValidSVGString());
+    NSPasteboard *pasteboard = [NSPasteboard pasteboardWithUniqueName];
+    [pasteboard clearContents];
+    [pasteboard writeObjects:[NSArray arrayWithObject:svgURL]];
+
+    NSURL *selectedURL = [SWImageTools firstImageFileURLFromPasteboard:pasteboard];
+
+    XCTAssertEqualObjects([selectedURL path], [svgURL path]);
+
+    [[NSFileManager defaultManager] removeItemAtURL:svgURL error:nil];
+}
+
+- (void)testFirstImageFileURLFromPasteboardRejectsMalformedSVGFiles
+{
+    NSURL *svgURL = PBWriteSVGString(@"<svg xmlns=\"http://www.w3.org/2000/svg\"><rect");
+    NSPasteboard *pasteboard = [NSPasteboard pasteboardWithUniqueName];
+    [pasteboard clearContents];
+    [pasteboard writeObjects:[NSArray arrayWithObject:svgURL]];
+
+    XCTAssertNil([SWImageTools firstImageFileURLFromPasteboard:pasteboard]);
+
+    [[NSFileManager defaultManager] removeItemAtURL:svgURL error:nil];
+}
+
+- (void)testFirstImageFileURLFromPasteboardRejectsUnsupportedFiles
+{
+    NSURL *textURL = PBTemporaryFileURL(@"txt");
+    [@"not an image" writeToURL:textURL
+                     atomically:YES
+                       encoding:NSUTF8StringEncoding
+                          error:nil];
+    NSPasteboard *pasteboard = [NSPasteboard pasteboardWithUniqueName];
+    [pasteboard clearContents];
+    [pasteboard writeObjects:[NSArray arrayWithObject:textURL]];
+
+    XCTAssertNil([SWImageTools firstImageFileURLFromPasteboard:pasteboard]);
+
+    [[NSFileManager defaultManager] removeItemAtURL:textURL error:nil];
 }
 
 - (void)testMovingOversizedPastedSelectionKeepsTransientBufferClippedToCanvas

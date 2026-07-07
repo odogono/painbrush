@@ -105,6 +105,7 @@
 
 // For copy-and-paste
 - (void)writeImageToPasteboard:(NSPasteboard *)pb;
+- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image atCanvasOrigin:(NSPoint)origin;
 
 + (void)setWillShowSheet:(BOOL)showSheet;
 

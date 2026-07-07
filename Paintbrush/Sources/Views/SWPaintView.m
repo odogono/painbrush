@@ -61,8 +61,10 @@
 	[self cursorUpdate:nil];
 	
 	// Set up drag stuff
-	[[self window] registerForDraggedTypes:[NSArray arrayWithObjects:
-											NSTIFFPboardType, nil]];
+	[self registerForDraggedTypes:[NSArray arrayWithObjects:
+								   NSPasteboardTypeFileURL,
+								   NSFilenamesPboardType,
+								   nil]];
 	
 	[self setNeedsDisplay:YES];	
 }
@@ -328,6 +330,36 @@
 											  clickCount:[theEvent clickCount]
 												pressure:[theEvent pressure]];
 	[NSApp postEvent:modifiedEvent atStart:YES];
+}
+
+#pragma mark Drag and drop
+
+- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
+{
+	return [self draggingUpdated:sender];
+}
+
+- (NSDragOperation)draggingUpdated:(id <NSDraggingInfo>)sender
+{
+	return [SWImageTools firstImageFileURLFromPasteboard:[sender draggingPasteboard]] ? NSDragOperationCopy : NSDragOperationNone;
+}
+
+- (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender
+{
+#pragma unused(sender)
+	return YES;
+}
+
+- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender
+{
+	NSURL *url = [SWImageTools firstImageFileURLFromPasteboard:[sender draggingPasteboard]];
+	NSBitmapImageRep *image = [SWImageTools imageRepWithExternalImageAtURL:url];
+	if (!image)
+		return NO;
+
+	// insertImageRepAsSelection: clamps and floors the origin for every caller.
+	NSPoint dropPoint = [self convertPoint:[sender draggingLocation] fromView:nil];
+	return [document insertImageRepAsSelection:image atCanvasOrigin:dropPoint];
 }
 
 

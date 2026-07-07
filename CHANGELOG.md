@@ -5,6 +5,8 @@
 - Added an opt-in Dock Toolbox preference that embeds the Toolbox as a fixed left sidebar in document windows while keeping the floating Toolbox as the default.
 - Made docked Toolboxes use per-document, session-only Toolbox state so selected tool, stroke, fill, transparency, and colors can diverge between open documents.
 - Preserved floating Toolbox behavior with the shared app-wide Toolbox state, including promoting the active document's docked state back to the floating Toolbox when undocking.
+- Added drag-to-insert image support that creates movable Selections at the drop point while preserving paste-style transparency behavior.
+- Raised the minimum supported macOS version to 11.0 and added native WebP import/drag support while keeping export formats unchanged.
 - Updated Toolbox architecture ADRs and added regression coverage for Toolbox state copying, independent document state, eyedropper color targeting, slider scroll targeting, and document-specific new-canvas background color.
 
 ## 2.2.1 - 2026-06-28

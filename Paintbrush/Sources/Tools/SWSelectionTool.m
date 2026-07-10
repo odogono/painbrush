@@ -26,6 +26,39 @@
 #import "Test-Swift.h"
 #endif
 
+@interface SWSelectionToolStateSnapshot : NSObject
+{
+	SWSelectionSnapshot *selectionSnapshot;
+}
+
+- (id)initWithSelectionSnapshot:(SWSelectionSnapshot *)snapshot;
+- (SWSelectionSnapshot *)selectionSnapshot;
+
+@end
+
+@implementation SWSelectionToolStateSnapshot
+
+- (id)initWithSelectionSnapshot:(SWSelectionSnapshot *)snapshot
+{
+	self = [super init];
+	if (self)
+		selectionSnapshot = [snapshot retain];
+	return self;
+}
+
+- (void)dealloc
+{
+	[selectionSnapshot release];
+	[super dealloc];
+}
+
+- (SWSelectionSnapshot *)selectionSnapshot
+{
+	return selectionSnapshot;
+}
+
+@end
+
 static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 {
 	NSSize size = [image size];
@@ -137,9 +170,17 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 		{
 			draggingSelection = pointIsInsideSelection;
 			if (draggingSelection)
+			{
 				previousPoint = point;
+				NSRect rect = [self clippingRect];
+				selectionDragGrabOffset = NSMakePoint(point.x - rect.origin.x, point.y - rect.origin.y);
+				hasSelectionDragGrabOffset = YES;
+			}
 			else
+			{
+				hasSelectionDragGrabOffset = NO;
 				[self tieUpLooseEnds];
+			}
 		}
 		else if (event == MOUSE_DRAGGED || (event == MOUSE_UP && draggingSelection))
 		{
@@ -152,6 +193,8 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 			// Do the moving thing
 			[SWImageTools clearImage:bufferImage];
 			[selection moveByDeltaX:deltaX y:deltaY];
+			selectionHiddenForTransfer = NO;
+			selectionTransferSourcePreviewActive = NO;
 			[self updateSelectionExtent];
 
 			// The clipping rect is the new redraw rect
@@ -162,11 +205,15 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 			[self drawNewBorder:nil];
 
 			if (event == MOUSE_UP)
+			{
 				draggingSelection = NO;
+				hasSelectionDragGrabOffset = NO;
+			}
 		} 
 		else if (!pointIsInsideSelection)
 		{
 			draggingSelection = NO;
+			hasSelectionDragGrabOffset = NO;
 			[self tieUpLooseEnds];
 		}
 	} 
@@ -200,6 +247,8 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 																	rect:rect
 														 backgroundColor:[self selectionBackgroundColor]
 														  omitBackground:shouldOmitBackground];
+					selectionHiddenForTransfer = NO;
+					selectionTransferSourcePreviewActive = NO;
 					marqueeRect = NSZeroRect;
 					[self updateSelectionExtent];
 				}
@@ -214,16 +263,202 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 	return nil;
 }
 
+- (void)startSelectionAnimationIfNeeded
+{
+	if (!animationTimer)
+		animationTimer = [NSTimer scheduledTimerWithTimeInterval:0.075
+														  target:self
+														selector:@selector(drawNewBorder:)
+														userInfo:nil
+														 repeats:YES];
+}
+
+- (BOOL)prepareSelectionTransferAtPoint:(NSPoint)point
+						  withMainImage:(NSBitmapImageRep *)mainImage
+							bufferImage:(NSBitmapImageRep *)bufferImage
+{
+	if (selection)
+		return YES;
+
+	[self performDrawAtPoint:point
+			   withMainImage:mainImage
+				 bufferImage:bufferImage
+				  mouseEvent:MOUSE_UP];
+	if (!selection)
+		return NO;
+
+	NSRect rect = [self clippingRect];
+	selectionDragGrabOffset = NSMakePoint([self savedPoint].x - rect.origin.x, [self savedPoint].y - rect.origin.y);
+	hasSelectionDragGrabOffset = YES;
+	return YES;
+}
+
+- (NSPoint)selectionTransferGrabOffset
+{
+	if (hasSelectionDragGrabOffset)
+		return selectionDragGrabOffset;
+
+	NSRect rect = [self clippingRect];
+	return NSMakePoint([self savedPoint].x - rect.origin.x, [self savedPoint].y - rect.origin.y);
+}
+
+- (SWSelectionToolStateSnapshot *)selectionToolStateSnapshot
+{
+	if (!selection)
+		return nil;
+	return [[[SWSelectionToolStateSnapshot alloc] initWithSelectionSnapshot:[selection selectionSnapshot]] autorelease];
+}
+
+- (void)restoreSelectionToolStateSnapshot:(SWSelectionToolStateSnapshot *)snapshot
+							  bufferImage:(NSBitmapImageRep *)bufferImage
+							withMainImage:(NSBitmapImageRep *)mainImage
+{
+	if (!snapshot)
+	{
+		[self discardSelection];
+		return;
+	}
+
+	_mainImage = mainImage;
+	_bufferImage = bufferImage;
+	[selection release];
+	selection = [[SWSelection alloc] initWithSelectionSnapshot:[snapshot selectionSnapshot]];
+	marqueeRect = NSZeroRect;
+	draggingSelection = NO;
+	hasSelectionDragGrabOffset = NO;
+	selectionHiddenForTransfer = NO;
+	selectionTransferSourcePreviewActive = NO;
+	[self updateSelectionExtent];
+	[self drawNewBorder:nil];
+	[super addRectToRedrawRect:[self clippingRect]];
+	[self startSelectionAnimationIfNeeded];
+}
+
+- (void)hideSelectionForTransfer
+{
+	if (!selection || selectionHiddenForTransfer)
+		return;
+
+	selectionHiddenForTransfer = YES;
+	if (_bufferImage)
+		[SWImageTools clearImage:_bufferImage];
+	[super addRectToRedrawRect:[self clippingRect]];
+	[NSApp sendAction:@selector(refreshImage:)
+				   to:nil
+				 from:self];
+}
+
+- (void)showSelectionForTransfer
+{
+	if (!selection)
+		return;
+
+	BOOL hadSourcePreview = selectionTransferSourcePreviewActive;
+	NSRect sourcePreviewRect = [self clippingRect];
+	if (hadSourcePreview)
+		sourcePreviewRect.origin = selectionTransferSourcePreviewOrigin;
+	selectionTransferSourcePreviewActive = NO;
+	if (!selectionHiddenForTransfer && !hadSourcePreview)
+		return;
+
+	selectionHiddenForTransfer = NO;
+	[self drawNewBorder:nil];
+	if (hadSourcePreview)
+		[super addRectToRedrawRect:sourcePreviewRect];
+	[super addRectToRedrawRect:[self clippingRect]];
+}
+
+- (void)selectionTransferDidEnterSource
+{
+	[self showSelectionForTransfer];
+}
+
+- (void)selectionTransferDidExitSource
+{
+	selectionTransferSourcePreviewActive = NO;
+	[self hideSelectionForTransfer];
+}
+
+- (BOOL)previewSelectionTransferAtDropPoint:(NSPoint)dropPoint grabOffset:(NSPoint)grabOffset
+{
+	if (!selection)
+		return NO;
+
+	NSRect previousPreviewRect = [self clippingRect];
+	if (selectionTransferSourcePreviewActive)
+		previousPreviewRect.origin = selectionTransferSourcePreviewOrigin;
+
+	selectionTransferSourcePreviewOrigin = NSMakePoint(floor(dropPoint.x - grabOffset.x),
+											floor(dropPoint.y - grabOffset.y));
+	selectionTransferSourcePreviewActive = YES;
+	selectionHiddenForTransfer = NO;
+
+	NSRect selectionRect = [self clippingRect];
+	CGFloat deltaX = selectionTransferSourcePreviewOrigin.x - selectionRect.origin.x;
+	CGFloat deltaY = selectionTransferSourcePreviewOrigin.y - selectionRect.origin.y;
+	[selection moveByDeltaX:deltaX y:deltaY];
+	[self updateSelectionExtent];
+	[selection moveByDeltaX:-deltaX y:-deltaY];
+
+	NSRect previewRect = selectionRect;
+	previewRect.origin = selectionTransferSourcePreviewOrigin;
+	[super addRectToRedrawRect:previousPreviewRect];
+	[super addRectToRedrawRect:previewRect];
+	[self drawNewBorder:nil];
+	return YES;
+}
+
+- (BOOL)commitSelectionTransferSourcePreview
+{
+	if (!selection || !selectionTransferSourcePreviewActive)
+		return NO;
+
+	NSRect previousRect = [self clippingRect];
+	CGFloat deltaX = selectionTransferSourcePreviewOrigin.x - previousRect.origin.x;
+	CGFloat deltaY = selectionTransferSourcePreviewOrigin.y - previousRect.origin.y;
+	selectionTransferSourcePreviewActive = NO;
+	selectionHiddenForTransfer = NO;
+	[selection moveByDeltaX:deltaX y:deltaY];
+	[self updateSelectionExtent];
+	[super addRectToRedrawRect:previousRect];
+	[super addRectToRedrawRect:[self clippingRect]];
+	[self drawNewBorder:nil];
+	return YES;
+}
+
+- (void)clearSelectionForSuccessfulTransfer
+{
+	[self discardSelection];
+}
+
 // Tick the timer!
 - (void)drawNewBorder:(NSTimer *)timer
 {
 #pragma unused(timer)
 	dottedLineOffset = (dottedLineOffset + 1) % 8;
+	BOOL drawsSourcePreview = selection && selectionTransferSourcePreviewActive && !selectionHiddenForTransfer;
+	CGFloat previewDeltaX = 0.0;
+	CGFloat previewDeltaY = 0.0;
+	if (drawsSourcePreview)
+	{
+		NSRect selectionRect = [self clippingRect];
+		previewDeltaX = selectionTransferSourcePreviewOrigin.x - selectionRect.origin.x;
+		previewDeltaY = selectionTransferSourcePreviewOrigin.y - selectionRect.origin.y;
+		[selection moveByDeltaX:previewDeltaX y:previewDeltaY];
+	}
 	
 	// Draw the backed image to the overlay
 	if (_bufferImage) 
 	{
 		[SWImageTools clearImage:_bufferImage];
+		if (selectionHiddenForTransfer)
+		{
+			[NSApp sendAction:@selector(refreshImage:)
+						   to:nil
+						 from:self];
+			return;
+		}
+
 		SWLockFocus(_bufferImage);
 		if (selection)
 			[selection drawInImage:_bufferImage];
@@ -237,6 +472,8 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 										 rect.origin.y + rect.size.height)] stroke];
 		SWUnlockFocus(_bufferImage);
 	}
+	if (drawsSourcePreview)
+		[selection moveByDeltaX:-previewDeltaX y:-previewDeltaY];
 	
 	// Get the view to perform a redraw to see the new border
 	[NSApp sendAction:@selector(refreshImage:)
@@ -286,6 +523,9 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 	selection = nil;
 	marqueeRect = NSZeroRect;
 	draggingSelection = NO;
+	hasSelectionDragGrabOffset = NO;
+	selectionHiddenForTransfer = NO;
+	selectionTransferSourcePreviewActive = NO;
 	[document resetSelectionExtent];
 	_bufferImage = nil;
 	_mainImage = nil;
@@ -345,6 +585,9 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 	selection = nil;
 	marqueeRect = NSZeroRect;
 	draggingSelection = NO;
+	hasSelectionDragGrabOffset = NO;
+	selectionHiddenForTransfer = NO;
+	selectionTransferSourcePreviewActive = NO;
 	// Clean up after ourselves
 	[mainImageCopy release];
 	_mainImage = nil;
@@ -372,6 +615,8 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 												 origin:rect.origin
 										backgroundColor:[self selectionBackgroundColor]
 										 omitBackground:shouldOmitBackground];
+	selectionHiddenForTransfer = NO;
+	selectionTransferSourcePreviewActive = NO;
 	[self updateSelectionExtent];
 
 	// Which one should we be using?  Let this method decide
@@ -384,11 +629,7 @@ static NSPoint SWPointConstrainedToImage(NSPoint point, NSBitmapImageRep *image)
 	[super addRectToRedrawRect:[self clippingRect]];
 	
 	// Manually create the timer
-	animationTimer = [NSTimer scheduledTimerWithTimeInterval:0.075 // 75 ms, or 13.33 Hz
-													  target:self
-													selector:@selector(drawNewBorder:)
-													userInfo:nil
-													 repeats:YES];	
+	[self startSelectionAnimationIfNeeded];
 }
 
 - (NSData *)imageData

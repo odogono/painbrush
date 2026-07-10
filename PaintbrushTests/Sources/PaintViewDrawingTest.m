@@ -1524,6 +1524,235 @@ static SWSelectionTool *PBMakeSelectionToolWithoutBackgroundColor(void)
     PBAssertDisplayPixelEquals([dataSource mainImage], 5, 4, 0, 255, 255, 255);
 }
 
+- (void)testSelectionTransferMaterializesInProgressMarquee
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(6.0, 6.0)] autorelease];
+    PBSetDisplayPixel([dataSource mainImage], 2, 2, 255, 0, 0, 255);
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+    [tool setDocument:(SWDocument *)undoHost];
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(1.0, 1.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(4.0, 4.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_DRAGGED];
+
+    XCTAssertTrue([tool prepareSelectionTransferAtPoint:NSMakePoint(4.0, 4.0)
+                                          withMainImage:[dataSource mainImage]
+                                            bufferImage:[dataSource bufferImage]]);
+    XCTAssertTrue([tool isSelected]);
+    XCTAssertEqual([tool clippingRect].origin.x, 1.0);
+    XCTAssertEqual([tool clippingRect].origin.y, 1.0);
+    XCTAssertEqual([tool selectionTransferGrabOffset].x, 0.0);
+    XCTAssertEqual([tool selectionTransferGrabOffset].y, 0.0);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 2, 2, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 255, 0, 0, 255);
+}
+
+- (void)testSelectionTransferDoesNotMaterializeInvalidMarquee
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(6.0, 6.0)] autorelease];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(1.0, 1.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_DOWN];
+
+    XCTAssertFalse([tool prepareSelectionTransferAtPoint:NSMakePoint(1.0, 4.0)
+                                           withMainImage:[dataSource mainImage]
+                                             bufferImage:[dataSource bufferImage]]);
+    XCTAssertFalse([tool isSelected]);
+}
+
+- (void)testSelectionTransferGrabOffsetStaysStableAfterInWindowMove
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(8.0, 8.0)] autorelease];
+    PBSetDisplayPixel([dataSource mainImage], 2, 2, 255, 0, 0, 255);
+    SWSelectionTool *tool = PBMakeSelectionTool();
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(4.0, 4.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_UP];
+
+    [tool performDrawAtPoint:NSMakePoint(2.0, 2.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_DOWN];
+    [tool performDrawAtPoint:NSMakePoint(5.0, 3.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_DRAGGED];
+
+    XCTAssertEqual([tool clippingRect].origin.x, 4.0);
+    XCTAssertEqual([tool clippingRect].origin.y, 2.0);
+    XCTAssertEqual([tool selectionTransferGrabOffset].x, 1.0);
+    XCTAssertEqual([tool selectionTransferGrabOffset].y, 1.0);
+}
+
+- (void)testSelectionTransferSnapshotRestoresClearedLiveSelection
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(6.0, 6.0)] autorelease];
+    PBSetDisplayPixel([dataSource mainImage], 2, 2, 255, 0, 0, 255);
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+    [tool setDocument:(SWDocument *)undoHost];
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(4.0, 4.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_UP];
+
+    SWSelectionToolStateSnapshot *snapshot = [tool selectionToolStateSnapshot];
+    XCTAssertNotNil(snapshot);
+
+    [tool clearSelectionForSuccessfulTransfer];
+    XCTAssertFalse([tool isSelected]);
+
+    [tool restoreSelectionToolStateSnapshot:snapshot
+                                bufferImage:[dataSource bufferImage]
+                              withMainImage:[dataSource mainImage]];
+
+    XCTAssertTrue([tool isSelected]);
+    XCTAssertEqual([tool clippingRect].origin.x, 1.0);
+    XCTAssertEqual([tool clippingRect].origin.y, 1.0);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 255, 0, 0, 255);
+}
+
+- (void)testSelectionTransferCanHideAndRestoreSourceOverlay
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(6.0, 6.0)] autorelease];
+    PBSetDisplayPixel([dataSource mainImage], 2, 2, 255, 0, 0, 255);
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+    [tool setDocument:(SWDocument *)undoHost];
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(4.0, 4.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_UP];
+
+    XCTAssertTrue([tool isSelected]);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 2, 2, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 255, 0, 0, 255);
+
+    [tool hideSelectionForTransfer];
+
+    XCTAssertTrue([tool isSelected]);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 2, 2, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 0, 0, 0, 0);
+
+    [tool showSelectionForTransfer];
+
+    XCTAssertTrue([tool isSelected]);
+    PBAssertDisplayPixelEquals([dataSource mainImage], 2, 2, 255, 255, 255, 255);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 255, 0, 0, 255);
+}
+
+- (void)testSelectionTransferSnapshotRestoresVisibleOverlayAfterHiddenTransferState
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(6.0, 6.0)] autorelease];
+    PBSetDisplayPixel([dataSource mainImage], 2, 2, 255, 0, 0, 255);
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+    [tool setDocument:(SWDocument *)undoHost];
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(4.0, 4.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_UP];
+
+    [tool hideSelectionForTransfer];
+    SWSelectionToolStateSnapshot *snapshot = [tool selectionToolStateSnapshot];
+    XCTAssertNotNil(snapshot);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 0, 0, 0, 0);
+
+    [tool showSelectionForTransfer];
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 255, 0, 0, 255);
+
+    [tool restoreSelectionToolStateSnapshot:snapshot
+                                bufferImage:[dataSource bufferImage]
+                              withMainImage:[dataSource mainImage]];
+
+    XCTAssertTrue([tool isSelected]);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 255, 0, 0, 255);
+}
+
+- (void)testSelectionTransferSourceReentryShowsSelectionUntilNextExit
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(6.0, 6.0)] autorelease];
+    PBSetDisplayPixel([dataSource mainImage], 2, 2, 255, 0, 0, 255);
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+    [tool setDocument:(SWDocument *)undoHost];
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(4.0, 4.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_UP];
+    [tool hideSelectionForTransfer];
+
+    [tool selectionTransferDidEnterSource];
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 255, 0, 0, 255);
+
+    [tool selectionTransferDidExitSource];
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 0, 0, 0, 0);
+}
+
+- (void)testSelectionTransferSourcePreviewFollowsDragWithoutMovingSelectionUntilDrop
+{
+    SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(10.0, 10.0)] autorelease];
+    PBSetDisplayPixel([dataSource mainImage], 2, 2, 255, 0, 0, 255);
+    PBCanvasUndoHost *undoHost = [[[PBCanvasUndoHost alloc] initWithDataSource:dataSource] autorelease];
+    SWSelectionTool *tool = PBMakeSelectionTool();
+    [tool setDocument:(SWDocument *)undoHost];
+
+    [tool setSavedPoint:NSMakePoint(1.0, 1.0)];
+    [tool performDrawAtPoint:NSMakePoint(4.0, 4.0)
+               withMainImage:[dataSource mainImage]
+                 bufferImage:[dataSource bufferImage]
+                  mouseEvent:MOUSE_UP];
+    [tool selectionTransferDidExitSource];
+
+    XCTAssertTrue([tool previewSelectionTransferAtDropPoint:NSMakePoint(8.0, 8.0)
+                                                 grabOffset:NSMakePoint(1.0, 1.0)]);
+    XCTAssertEqual([tool clippingRect].origin.x, 1.0);
+    XCTAssertEqual([tool clippingRect].origin.y, 1.0);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 0, 0, 0, 0);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 8, 8, 255, 0, 0, 255);
+
+    [tool selectionTransferDidEnterSource];
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 2, 2, 255, 0, 0, 255);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 8, 8, 0, 0, 0, 0);
+
+    XCTAssertTrue([tool previewSelectionTransferAtDropPoint:NSMakePoint(8.0, 8.0)
+                                                 grabOffset:NSMakePoint(1.0, 1.0)]);
+    [tool selectionTransferDidExitSource];
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 8, 8, 0, 0, 0, 0);
+
+    XCTAssertTrue([tool previewSelectionTransferAtDropPoint:NSMakePoint(6.0, 6.0)
+                                                 grabOffset:NSMakePoint(1.0, 1.0)]);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 8, 8, 0, 0, 0, 0);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 6, 6, 255, 0, 0, 255);
+
+    XCTAssertTrue([tool commitSelectionTransferSourcePreview]);
+    XCTAssertEqual([tool clippingRect].origin.x, 5.0);
+    XCTAssertEqual([tool clippingRect].origin.y, 5.0);
+    PBAssertDisplayPixelEquals([dataSource bufferImage], 6, 6, 255, 0, 0, 255);
+}
+
 - (void)testDrawingUndoAndRedoRestoreCanvasPixels
 {
     SWImageDataSource *dataSource = [[[SWImageDataSource alloc] initWithSize:NSMakeSize(3.0, 2.0)] autorelease];

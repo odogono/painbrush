@@ -26,6 +26,12 @@
 #import "SWAppController.h"
 #import "SWDocument.h"
 #import "SWImageDataSource.h"
+#import "SWImageTools.h"
+#import "SWSelectionTool.h"
+
+static NSString * const SWSelectionTransferPasteboardType = @"org.paintbrush.selection-transfer";
+static NSString * const SWSelectionTransferGrabOffsetPasteboardType = @"org.paintbrush.selection-transfer-grab-offset";
+static NSString * const SWSelectionTransferSourcePasteboardType = @"org.paintbrush.selection-transfer-source";
 
 @implementation SWPaintView
 
@@ -62,6 +68,7 @@
 	
 	// Set up drag stuff
 	[self registerForDraggedTypes:[NSArray arrayWithObjects:
+								   SWSelectionTransferPasteboardType,
 								   NSPasteboardTypeFileURL,
 								   NSFilenamesPboardType,
 								   nil]];
@@ -88,6 +95,8 @@
 	[toolbox release];
 
 	[undoData release];
+	[selectionTransferPreviewData release];
+	[selectionTransferPreviewImage release];
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	[frontColor release];
 	[backColor release];
@@ -241,10 +250,19 @@
 	{
 		NSPoint p = [event locationInWindow];
 		NSPoint dragPoint = [self convertPoint:p fromView:nil];
+		BOOL shouldStartSelectionTransfer = [[toolbox currentTool] isKindOfClass:[SWSelectionTool class]]
+			&& !NSPointInRect([NSEvent mouseLocation], [[self window] frame]);
 		
 		// Necessary for when the view is zoomed above 100%
 		currentPoint.x = floor(dragPoint.x);
 		currentPoint.y = floor(dragPoint.y);
+
+		if (shouldStartSelectionTransfer && [self beginSelectionTransferWithEvent:event atCanvasPoint:currentPoint])
+		{
+			isPayingAttention = NO;
+			[self setNeedsDisplay:YES];
+			return;
+		}
 		
 		[[toolbox currentTool] setFlags:[event modifierFlags]];
 		[[toolbox currentTool] performDrawAtPoint:currentPoint 
@@ -334,6 +352,129 @@
 
 #pragma mark Drag and drop
 
+- (NSString *)selectionTransferSourceIdentifier
+{
+	return [NSString stringWithFormat:@"%p", self];
+}
+
+- (NSImage *)selectionTransferDragImageFromData:(NSData *)data
+{
+	#pragma unused(data)
+	// The target document previews the transferred selection live while dragging.
+	// Keep AppKit's legacy drag image from covering that preview.
+	return [[[NSImage alloc] initWithSize:NSMakeSize(1.0, 1.0)] autorelease];
+}
+
+- (BOOL)beginSelectionTransferWithEvent:(NSEvent *)event atCanvasPoint:(NSPoint)canvasPoint
+{
+	SWSelectionTool *selectionTool = (SWSelectionTool *)[toolbox currentTool];
+	if (![selectionTool prepareSelectionTransferAtPoint:canvasPoint
+										  withMainImage:[dataSource mainImage]
+											bufferImage:[dataSource bufferImage]])
+		return NO;
+
+	NSData *imageData = [selectionTool imageData];
+	if (![imageData length])
+		return NO;
+
+	NSPoint grabOffset = [selectionTool selectionTransferGrabOffset];
+	NSPasteboard *pasteboard = [NSPasteboard pasteboardWithName:NSDragPboard];
+	[pasteboard declareTypes:[NSArray arrayWithObjects:
+							  SWSelectionTransferPasteboardType,
+							  SWSelectionTransferGrabOffsetPasteboardType,
+							  SWSelectionTransferSourcePasteboardType,
+							  NSTIFFPboardType,
+							  nil]
+					  owner:nil];
+	[pasteboard setString:@"1" forType:SWSelectionTransferPasteboardType];
+	[pasteboard setString:NSStringFromPoint(grabOffset) forType:SWSelectionTransferGrabOffsetPasteboardType];
+	[pasteboard setString:[self selectionTransferSourceIdentifier] forType:SWSelectionTransferSourcePasteboardType];
+	[pasteboard setData:imageData forType:NSTIFFPboardType];
+
+	selectionTransferInProgress = YES;
+	sameDocumentSelectionTransferCompleted = NO;
+	[selectionTool selectionTransferDidExitSource];
+
+	NSImage *dragImage = [self selectionTransferDragImageFromData:imageData];
+	NSPoint imageLocation = NSMakePoint(canvasPoint.x - grabOffset.x, canvasPoint.y - grabOffset.y);
+	[self dragImage:dragImage
+				 at:imageLocation
+			 offset:NSZeroSize
+			  event:event
+		 pasteboard:pasteboard
+			 source:self
+		  slideBack:YES];
+	return YES;
+}
+
+- (BOOL)pasteboardContainsSelectionTransfer:(NSPasteboard *)pasteboard
+{
+	return [pasteboard availableTypeFromArray:[NSArray arrayWithObject:SWSelectionTransferPasteboardType]] != nil;
+}
+
+- (NSPoint)selectionTransferGrabOffsetFromPasteboard:(NSPasteboard *)pasteboard
+{
+	NSString *string = [pasteboard stringForType:SWSelectionTransferGrabOffsetPasteboardType];
+	if (!string)
+		return NSZeroPoint;
+	return NSPointFromString(string);
+}
+
+- (BOOL)selectionTransferPasteboardCameFromThisView:(NSPasteboard *)pasteboard
+{
+	NSString *sourceIdentifier = [pasteboard stringForType:SWSelectionTransferSourcePasteboardType];
+	return [sourceIdentifier isEqualToString:[self selectionTransferSourceIdentifier]];
+}
+
+- (void)clearSelectionTransferPreviewCache
+{
+	[selectionTransferPreviewData release];
+	selectionTransferPreviewData = nil;
+	[selectionTransferPreviewImage release];
+	selectionTransferPreviewImage = nil;
+}
+
+- (NSBitmapImageRep *)selectionTransferImageFromPasteboard:(NSPasteboard *)pasteboard
+{
+	NSData *data = [pasteboard dataForType:NSTIFFPboardType];
+	if (![data length])
+		return nil;
+
+	if (!selectionTransferPreviewData || ![selectionTransferPreviewData isEqualToData:data])
+	{
+		[selectionTransferPreviewData release];
+		selectionTransferPreviewData = [data retain];
+		[selectionTransferPreviewImage release];
+		selectionTransferPreviewImage = [[SWImageTools imageRepWithPasteboardImageData:data] retain];
+	}
+
+	return selectionTransferPreviewImage;
+}
+
+- (NSDragOperation)updateSelectionTransferPreviewForDraggingInfo:(id <NSDraggingInfo>)sender
+{
+	NSPasteboard *pasteboard = [sender draggingPasteboard];
+	NSBitmapImageRep *image = [self selectionTransferImageFromPasteboard:pasteboard];
+	if (!image)
+	{
+		[document cancelSelectionTransferPreview];
+		[self clearSelectionTransferPreviewCache];
+		return NSDragOperationNone;
+	}
+
+	NSPoint dropPoint = [self convertPoint:[sender draggingLocation] fromView:nil];
+	NSPoint grabOffset = [self selectionTransferGrabOffsetFromPasteboard:pasteboard];
+	if (![document previewSelectionTransferImageRep:image
+										atDropPoint:dropPoint
+										 grabOffset:grabOffset])
+	{
+		[document cancelSelectionTransferPreview];
+		return NSDragOperationNone;
+	}
+
+	return NSDragOperationMove;
+}
+
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender
 {
 	return [self draggingUpdated:sender];
@@ -341,7 +482,40 @@
 
 - (NSDragOperation)draggingUpdated:(id <NSDraggingInfo>)sender
 {
-	return [SWImageTools firstImageFileURLFromPasteboard:[sender draggingPasteboard]] ? NSDragOperationCopy : NSDragOperationNone;
+	NSPasteboard *pasteboard = [sender draggingPasteboard];
+	if ([self pasteboardContainsSelectionTransfer:pasteboard])
+	{
+		if (selectionTransferInProgress && [self selectionTransferPasteboardCameFromThisView:pasteboard])
+		{
+			if (![[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+				return NSDragOperationNone;
+			SWSelectionTool *selectionTool = (SWSelectionTool *)[toolbox currentTool];
+			NSPoint dropPoint = [self convertPoint:[sender draggingLocation] fromView:nil];
+			NSPoint grabOffset = [self selectionTransferGrabOffsetFromPasteboard:pasteboard];
+			BOOL previewed = [selectionTool previewSelectionTransferAtDropPoint:dropPoint grabOffset:grabOffset];
+			[self setNeedsDisplay:YES];
+			return previewed ? NSDragOperationMove : NSDragOperationNone;
+		}
+		return [self updateSelectionTransferPreviewForDraggingInfo:sender];
+	}
+	[document cancelSelectionTransferPreview];
+	[self clearSelectionTransferPreviewCache];
+	return [SWImageTools firstImageFileURLFromPasteboard:pasteboard] ? NSDragOperationCopy : NSDragOperationNone;
+}
+
+- (void)draggingExited:(id <NSDraggingInfo>)sender
+{
+	NSPasteboard *pasteboard = [sender draggingPasteboard];
+	if (selectionTransferInProgress && [self selectionTransferPasteboardCameFromThisView:pasteboard])
+	{
+		if ([[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+			[(SWSelectionTool *)[toolbox currentTool] selectionTransferDidExitSource];
+		[self setNeedsDisplay:YES];
+		return;
+	}
+
+	[document cancelSelectionTransferPreview];
+	[self clearSelectionTransferPreviewCache];
 }
 
 - (BOOL)prepareForDragOperation:(id <NSDraggingInfo>)sender
@@ -352,6 +526,51 @@
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender
 {
+	NSPasteboard *pasteboard = [sender draggingPasteboard];
+	if ([self pasteboardContainsSelectionTransfer:pasteboard])
+	{
+		BOOL sameDocumentTransfer = [self selectionTransferPasteboardCameFromThisView:pasteboard];
+		if (selectionTransferInProgress && sameDocumentTransfer)
+		{
+			if (![[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+				return NO;
+			SWSelectionTool *selectionTool = (SWSelectionTool *)[toolbox currentTool];
+			NSPoint dropPoint = [self convertPoint:[sender draggingLocation] fromView:nil];
+			NSPoint grabOffset = [self selectionTransferGrabOffsetFromPasteboard:pasteboard];
+			BOOL previewed = [selectionTool previewSelectionTransferAtDropPoint:dropPoint grabOffset:grabOffset];
+			if (previewed)
+				[document registerSelectionTransferSourceUndo];
+			BOOL committed = previewed && [selectionTool commitSelectionTransferSourcePreview];
+			[self clearSelectionTransferPreviewCache];
+			sameDocumentSelectionTransferCompleted = committed;
+			[self setNeedsDisplay:YES];
+			return committed;
+		}
+
+		NSBitmapImageRep *image = [self selectionTransferImageFromPasteboard:pasteboard];
+		if (!image)
+		{
+			[document cancelSelectionTransferPreview];
+			[self clearSelectionTransferPreviewCache];
+			return NO;
+		}
+
+		NSPoint dropPoint = [self convertPoint:[sender draggingLocation] fromView:nil];
+		NSPoint grabOffset = [self selectionTransferGrabOffsetFromPasteboard:pasteboard];
+		BOOL previewed = [document previewSelectionTransferImageRep:image
+														atDropPoint:dropPoint
+														 grabOffset:grabOffset];
+		BOOL inserted = previewed && [document finishSelectionTransferPreview];
+		if (inserted)
+			[self clearSelectionTransferPreviewCache];
+		else
+			[document cancelSelectionTransferPreview];
+
+		if (inserted && sameDocumentTransfer)
+			sameDocumentSelectionTransferCompleted = YES;
+		return inserted;
+	}
+
 	NSURL *url = [SWImageTools firstImageFileURLFromPasteboard:[sender draggingPasteboard]];
 	NSBitmapImageRep *image = [SWImageTools imageRepWithExternalImageAtURL:url];
 	if (!image)
@@ -360,6 +579,31 @@
 	// insertImageRepAsSelection: clamps and floors the origin for every caller.
 	NSPoint dropPoint = [self convertPoint:[sender draggingLocation] fromView:nil];
 	return [document insertImageRepAsSelection:image atCanvasOrigin:dropPoint];
+}
+
+- (NSDragOperation)draggingSourceOperationMaskForLocal:(BOOL)isLocal
+{
+#pragma unused(isLocal)
+	return NSDragOperationMove;
+}
+
+- (void)draggedImage:(NSImage *)image endedAt:(NSPoint)screenPoint operation:(NSDragOperation)operation
+{
+#pragma unused(image, screenPoint)
+	if (selectionTransferInProgress && operation == NSDragOperationMove && !sameDocumentSelectionTransferCompleted)
+	{
+		[document registerSelectionTransferSourceUndo];
+		if ([[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+			[(SWSelectionTool *)[toolbox currentTool] clearSelectionForSuccessfulTransfer];
+		[self setNeedsDisplay:YES];
+	}
+	else if (selectionTransferInProgress && [[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+	{
+		[(SWSelectionTool *)[toolbox currentTool] selectionTransferDidEnterSource];
+		[self setNeedsDisplay:YES];
+	}
+	selectionTransferInProgress = NO;
+	sameDocumentSelectionTransferCompleted = NO;
 }
 
 

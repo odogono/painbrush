@@ -16,6 +16,10 @@ _Avoid_: Overlay selection, clipping rect
 The temporary overlay area used while a live Selection is active; it is clipped to the Canvas bounds on all edges.
 _Avoid_: Canvas resize, pasted canvas
 
+**Selection transfer**:
+Moving a live or in-progress Selection between Paintbrush document windows by dragging it out of one window and dropping it into another. A successful transfer clears the source Selection and creates a live Selection in the target document.
+_Avoid_: Selection copy, Finder drop, cross-document paste
+
 **Toolbox**:
 The user-facing control surface for choosing the active drawing tool and drawing attributes such as stroke width, fill mode, selection transparency, and foreground/background colors. It may be hosted as a floating panel or embedded in another UI host.
 _Avoid_: Toolbox panel, tool window, shared state

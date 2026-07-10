@@ -34,6 +34,8 @@
 @class SWSavePanelAccessoryViewController;
 @class SWImageDataSource;
 @class SWCanvasHistorySnapshot;
+@class SWDocumentEditStateSnapshot;
+@class SWSelectionToolStateSnapshot;
 @class NSBitmapImageRep;
 
 @interface SWDocument : NSDocument
@@ -59,6 +61,7 @@
 	// Misc other member variables
 	NSNotificationCenter *nc;
 	NSString *currentFileType;
+	SWDocumentEditStateSnapshot *selectionTransferPreviewSnapshot;
 }
 
 // Properties
@@ -106,6 +109,19 @@
 // For copy-and-paste
 - (void)writeImageToPasteboard:(NSPasteboard *)pb;
 - (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image atCanvasOrigin:(NSPoint)origin;
+- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image
+					   atDropPoint:(NSPoint)dropPoint
+						grabOffset:(NSPoint)grabOffset;
+- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image
+					   atDropPoint:(NSPoint)dropPoint
+						grabOffset:(NSPoint)grabOffset
+					  registerUndo:(BOOL)registerUndo;
+- (void)registerSelectionTransferSourceUndo;
+- (BOOL)previewSelectionTransferImageRep:(NSBitmapImageRep *)image
+							 atDropPoint:(NSPoint)dropPoint
+							  grabOffset:(NSPoint)grabOffset;
+- (BOOL)finishSelectionTransferPreview;
+- (void)cancelSelectionTransferPreview;
 
 + (void)setWillShowSheet:(BOOL)showSheet;
 

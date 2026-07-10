@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.0 - 2026-07-10
+
+- Added move-style Selection transfer between document windows, including live target previews and support for dragging in-progress marquee Selections.
+- Preserved the cursor grab offset across windows and added independent source and target undo restoration for completed transfers.
+- Made the source Selection hide while outside its document, follow the pointer when dragged back over the original Canvas, and restore cleanly when the transfer is canceled.
+- Added regression coverage for Selection snapshots, repeated source/target transitions, preview cleanup, source re-entry, and same-document drops.
+
 ## 2.3.0 - 2026-07-03
 
 - Added an opt-in Dock Toolbox preference that embeds the Toolbox as a fixed left sidebar in document windows while keeping the floating Toolbox as the default.

@@ -33,6 +33,53 @@
 #import "SWSavePanelAccessoryViewController.h"
 #import "SWPrintPanelAccessoryViewController.h"
 #import "SWImageDataSource.h"
+#import "SWSelectionTool.h"
+
+@interface SWDocumentEditStateSnapshot : NSObject
+{
+	SWCanvasHistorySnapshot *canvasSnapshot;
+	SWSelectionToolStateSnapshot *selectionToolSnapshot;
+}
+
+- (id)initWithCanvasSnapshot:(SWCanvasHistorySnapshot *)canvas
+	   selectionToolSnapshot:(SWSelectionToolStateSnapshot *)selection;
+- (SWCanvasHistorySnapshot *)canvasSnapshot;
+- (SWSelectionToolStateSnapshot *)selectionToolSnapshot;
+
+@end
+
+@implementation SWDocumentEditStateSnapshot
+
+- (id)initWithCanvasSnapshot:(SWCanvasHistorySnapshot *)canvas
+	   selectionToolSnapshot:(SWSelectionToolStateSnapshot *)selection
+{
+	self = [super init];
+	if (self)
+	{
+		canvasSnapshot = [canvas retain];
+		selectionToolSnapshot = [selection retain];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	[canvasSnapshot release];
+	[selectionToolSnapshot release];
+	[super dealloc];
+}
+
+- (SWCanvasHistorySnapshot *)canvasSnapshot
+{
+	return canvasSnapshot;
+}
+
+- (SWSelectionToolStateSnapshot *)selectionToolSnapshot
+{
+	return selectionToolSnapshot;
+}
+
+@end
 
 @implementation SWDocument
 
@@ -117,6 +164,7 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	[self discardDockedToolbox];
 	[documentToolboxState release];
 	[toolbox release];
+	[selectionTransferPreviewSnapshot release];
 	[dataSource release];
 	[super dealloc];
 }
@@ -712,6 +760,106 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	[clipView setNeedsDisplay:YES];
 }
 
+- (SWDocumentEditStateSnapshot *)documentEditStateSnapshotIncludingSelection:(BOOL)includeSelection
+{
+	SWSelectionToolStateSnapshot *selectionSnapshot = nil;
+	if (includeSelection && [[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+		selectionSnapshot = [(SWSelectionTool *)[toolbox currentTool] selectionToolStateSnapshot];
+
+	return [[[SWDocumentEditStateSnapshot alloc] initWithCanvasSnapshot:[dataSource canvasHistorySnapshot]
+												   selectionToolSnapshot:selectionSnapshot] autorelease];
+}
+
+- (void)registerDocumentEditStateUndoWithActionName:(NSString *)actionName
+{
+	SWDocumentEditStateSnapshot *snapshot = [self documentEditStateSnapshotIncludingSelection:YES];
+	[self registerDocumentEditStateUndoWithSnapshot:snapshot actionName:actionName];
+}
+
+- (void)registerDocumentEditStateUndoWithSnapshot:(SWDocumentEditStateSnapshot *)snapshot
+									   actionName:(NSString *)actionName
+{
+	NSUndoManager *undo = [self undoManager];
+	[[undo prepareWithInvocationTarget:self] restoreDocumentEditStateSnapshot:snapshot
+																   actionName:actionName];
+	[undo setActionName:actionName];
+}
+
+- (void)registerSelectionTransferSourceUndo
+{
+	[self registerDocumentEditStateUndoWithActionName:
+		NSLocalizedString(@"Selection Transfer", @"The undo command string for moving a selection between documents")];
+}
+
+- (void)restoreDocumentEditStateSnapshot:(SWDocumentEditStateSnapshot *)snapshot
+							  actionName:(NSString *)actionName
+{
+	SWDocumentEditStateSnapshot *currentSnapshot = [self documentEditStateSnapshotIncludingSelection:YES];
+	[self registerDocumentEditStateUndoWithSnapshot:currentSnapshot actionName:actionName];
+	[self applyDocumentEditStateSnapshot:snapshot];
+}
+
+- (void)applyDocumentEditStateSnapshot:(SWDocumentEditStateSnapshot *)snapshot
+{
+	SWSelectionToolStateSnapshot *selectionSnapshot = [snapshot selectionToolSnapshot];
+	if ([[toolbox currentTool] isKindOfClass:[SWSelectionTool class]])
+		[(SWSelectionTool *)[toolbox currentTool] discardSelection];
+
+	[dataSource restoreCanvasHistorySnapshot:[snapshot canvasSnapshot]];
+	[paintView setFrame:NSMakeRect(0.0, 0.0, [dataSource size].width, [dataSource size].height)];
+
+	if (selectionSnapshot)
+	{
+		SWSelectionTool *selectionTool = [self switchToSelectionTool];
+		if (selectionTool)
+			[selectionTool restoreSelectionToolStateSnapshot:selectionSnapshot
+												 bufferImage:[dataSource bufferImage]
+											   withMainImage:[dataSource mainImage]];
+	}
+
+	[paintView setNeedsDisplay:YES];
+	[clipView setNeedsDisplay:YES];
+}
+
+- (BOOL)previewSelectionTransferImageRep:(NSBitmapImageRep *)image
+							 atDropPoint:(NSPoint)dropPoint
+							  grabOffset:(NSPoint)grabOffset
+{
+	if (!selectionTransferPreviewSnapshot)
+		selectionTransferPreviewSnapshot = [[self documentEditStateSnapshotIncludingSelection:YES] retain];
+	else
+		[self applyDocumentEditStateSnapshot:selectionTransferPreviewSnapshot];
+
+	return [self insertImageRepAsSelection:image
+							   atDropPoint:dropPoint
+								grabOffset:grabOffset
+							  registerUndo:NO];
+}
+
+- (BOOL)finishSelectionTransferPreview
+{
+	if (!selectionTransferPreviewSnapshot)
+		return NO;
+
+	[self registerDocumentEditStateUndoWithSnapshot:selectionTransferPreviewSnapshot
+										 actionName:NSLocalizedString(@"Selection Transfer", @"The undo command string for moving a selection between documents")];
+	[selectionTransferPreviewSnapshot release];
+	selectionTransferPreviewSnapshot = nil;
+	return YES;
+}
+
+- (void)cancelSelectionTransferPreview
+{
+	if (!selectionTransferPreviewSnapshot)
+		return;
+
+	SWDocumentEditStateSnapshot *snapshot = [selectionTransferPreviewSnapshot retain];
+	[selectionTransferPreviewSnapshot release];
+	selectionTransferPreviewSnapshot = nil;
+	[self applyDocumentEditStateSnapshot:snapshot];
+	[snapshot release];
+}
+
 - (NSSize)selectionExtentSizeForSelectionRect:(NSRect)selectionRect
 {
 	#pragma unused(selectionRect)
@@ -773,7 +921,9 @@ static BOOL kSWDocumentWillShowSheet = YES;
 	[self writeImageToPasteboard:[NSPasteboard generalPasteboard]];
 }
 
-- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image atCanvasOrigin:(NSPoint)origin
+- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image
+					atCanvasOrigin:(NSPoint)origin
+					  registerUndo:(BOOL)shouldRegisterUndo
 {
 	if (!image || [image pixelsWide] <= 0 || [image pixelsHigh] <= 0)
 		return NO;
@@ -783,7 +933,8 @@ static BOOL kSWDocumentWillShowSheet = YES;
 		return NO;
 
 	// Prepare for an insertion by allowing an undo.
-	[self registerDrawingUndo];
+	if (shouldRegisterUndo)
+		[self registerDrawingUndo];
 
 	if (origin.x < 0)
 		origin.x = 0;
@@ -804,6 +955,34 @@ static BOOL kSWDocumentWillShowSheet = YES;
 					 withMainImage:[dataSource mainImage]];
 	[paintView setNeedsDisplay:YES];
 	return YES;
+}
+
+- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image atCanvasOrigin:(NSPoint)origin
+{
+	return [self insertImageRepAsSelection:image
+							atCanvasOrigin:origin
+							  registerUndo:YES];
+}
+
+- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image
+					   atDropPoint:(NSPoint)dropPoint
+						grabOffset:(NSPoint)grabOffset
+					  registerUndo:(BOOL)registerUndo
+{
+	NSPoint origin = NSMakePoint(dropPoint.x - grabOffset.x, dropPoint.y - grabOffset.y);
+	return [self insertImageRepAsSelection:image
+							atCanvasOrigin:origin
+							  registerUndo:registerUndo];
+}
+
+- (BOOL)insertImageRepAsSelection:(NSBitmapImageRep *)image
+					   atDropPoint:(NSPoint)dropPoint
+						grabOffset:(NSPoint)grabOffset
+{
+	return [self insertImageRepAsSelection:image
+							   atDropPoint:dropPoint
+								grabOffset:grabOffset
+							  registerUndo:YES];
 }
 
 

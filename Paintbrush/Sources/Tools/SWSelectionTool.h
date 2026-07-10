@@ -21,14 +21,20 @@
 #import "SWTool.h"
 
 @class SWSelection;
+@class SWSelectionToolStateSnapshot;
 
 @interface SWSelectionTool : SWTool {
 	NSTimer *animationTimer;
 	CGFloat dottedLineArray[2];
 	NSInteger dottedLineOffset;
 	NSPoint previousPoint;
+	NSPoint selectionDragGrabOffset;
+	NSPoint selectionTransferSourcePreviewOrigin;
 	NSRect marqueeRect;
 	BOOL draggingSelection;
+	BOOL hasSelectionDragGrabOffset;
+	BOOL selectionHiddenForTransfer;
+	BOOL selectionTransferSourcePreviewActive;
 
 	BOOL shouldOmitBackground;
 	SWSelection *selection;
@@ -38,6 +44,21 @@
 - (NSRect)clippingRect;
 - (NSBitmapImageRep *)selectedImage;
 - (NSData *)imageData;
+- (BOOL)prepareSelectionTransferAtPoint:(NSPoint)point
+						  withMainImage:(NSBitmapImageRep *)mainImage
+							bufferImage:(NSBitmapImageRep *)bufferImage;
+- (NSPoint)selectionTransferGrabOffset;
+- (SWSelectionToolStateSnapshot *)selectionToolStateSnapshot;
+- (void)restoreSelectionToolStateSnapshot:(SWSelectionToolStateSnapshot *)snapshot
+							  bufferImage:(NSBitmapImageRep *)bufferImage
+							withMainImage:(NSBitmapImageRep *)mainImage;
+- (void)hideSelectionForTransfer;
+- (void)showSelectionForTransfer;
+- (void)selectionTransferDidEnterSource;
+- (void)selectionTransferDidExitSource;
+- (BOOL)previewSelectionTransferAtDropPoint:(NSPoint)dropPoint grabOffset:(NSPoint)grabOffset;
+- (BOOL)commitSelectionTransferSourcePreview;
+- (void)clearSelectionForSuccessfulTransfer;
 - (void)setClippingRect:(NSRect)rect
 			   forImage:(NSBitmapImageRep *)image
 			bufferImage:(NSBitmapImageRep *)bufferImage

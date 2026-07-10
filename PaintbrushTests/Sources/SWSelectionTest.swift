@@ -176,6 +176,31 @@ final class SWSelectionTest: XCTestCase {
         assertPixel(copiedImage, x: 1, y: 1, red: 255, green: 255, blue: 0, alpha: 255)
     }
 
+    func testSelectionSnapshotRestoresLiveSelectionState() {
+        let canvas = makeImage(width: 4, height: 4)
+        setDisplayPixel(canvas, x: 1, y: 1, red: 255, green: 0, blue: 0, alpha: 255)
+        setDisplayPixel(canvas, x: 2, y: 1, red: 0, green: 255, blue: 0, alpha: 255)
+        let selection = SWSelection(
+            canvasImage: canvas,
+            rect: NSRect(x: 1, y: 1, width: 2, height: 1),
+            backgroundColor: .white,
+            omitBackground: false
+        )
+        selection.moveBy(deltaX: 1, y: 2)
+
+        let restoredSelection = SWSelection(selectionSnapshot: selection.selectionSnapshot())
+
+        XCTAssertTrue(restoredSelection.hasOriginalCanvasImage)
+        XCTAssertEqual(restoredSelection.clippingRect.origin.x, 2.0)
+        XCTAssertEqual(restoredSelection.clippingRect.origin.y, 3.0)
+        assertDisplayPixel(restoredSelection.selectedImage, x: 0, y: 0, red: 255, green: 0, blue: 0, alpha: 255)
+        assertDisplayPixel(restoredSelection.selectedImage, x: 1, y: 0, red: 0, green: 255, blue: 0, alpha: 255)
+
+        restoredSelection.restoreOriginalCanvas(to: canvas)
+        assertDisplayPixel(canvas, x: 1, y: 1, red: 255, green: 0, blue: 0, alpha: 255)
+        assertDisplayPixel(canvas, x: 2, y: 1, red: 0, green: 255, blue: 0, alpha: 255)
+    }
+
     private func makeImage(width: Int, height: Int) -> NSBitmapImageRep {
         let image = NSBitmapImageRep(
             bitmapDataPlanes: nil,

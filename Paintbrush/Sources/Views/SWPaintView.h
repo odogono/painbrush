@@ -37,11 +37,15 @@
 	NSColor *frontColor;
 	NSColor *backColor;
 	NSData *undoData;
+	NSData *selectionTransferPreviewData;
+	NSBitmapImageRep *selectionTransferPreviewImage;
 	NSBezierPath *expPath;
 	SWToolboxController *toolboxController;
 	SWToolbox *toolbox;
 
 	BOOL isPayingAttention;
+	BOOL selectionTransferInProgress;
+	BOOL sameDocumentSelectionTransferCompleted;
 	
 	NSColor *backgroundColor;
 	

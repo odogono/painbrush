@@ -19,6 +19,31 @@
 import AppKit
 
 @objcMembers
+public final class SWSelectionSnapshot: NSObject {
+    fileprivate let baseRect: NSRect
+    fileprivate let delta: NSPoint
+    fileprivate let omitBackground: Bool
+    fileprivate let transparentImage: NSBitmapImageRep
+    fileprivate let opaqueImage: NSBitmapImageRep
+    fileprivate let originalCanvasImage: NSBitmapImageRep?
+
+    fileprivate init(baseRect: NSRect, delta: NSPoint, omitBackground: Bool, transparentImage: NSBitmapImageRep, opaqueImage: NSBitmapImageRep, originalCanvasImage: NSBitmapImageRep?) {
+        self.baseRect = baseRect
+        self.delta = delta
+        self.omitBackground = omitBackground
+        self.transparentImage = SWSelection.copyImage(transparentImage)
+        self.opaqueImage = SWSelection.copyImage(opaqueImage)
+        if let originalCanvasImage {
+            self.originalCanvasImage = SWSelection.copyImage(originalCanvasImage)
+        } else {
+            self.originalCanvasImage = nil
+        }
+
+        super.init()
+    }
+}
+
+@objcMembers
 public final class SWSelection: NSObject {
     private var baseRect: NSRect
     private var delta = NSPoint.zero
@@ -28,16 +53,34 @@ public final class SWSelection: NSObject {
     private var activeImage: NSBitmapImageRep
     private let originalCanvasImage: NSBitmapImageRep?
 
-    private init(sourceImage: NSBitmapImageRep, baseRect: NSRect, originalCanvasImage: NSBitmapImageRep?, backgroundColor: NSColor, omitBackground: Bool) {
+    private init(baseRect: NSRect, delta: NSPoint, omitBackground: Bool, transparentImage: NSBitmapImageRep, opaqueImage: NSBitmapImageRep, originalCanvasImage: NSBitmapImageRep?) {
         self.baseRect = baseRect
+        self.delta = delta
         self.omitBackground = omitBackground
-        self.originalCanvasImage = originalCanvasImage
-        self.opaqueImage = SWSelection.copyImage(sourceImage)
-        self.transparentImage = SWSelection.copyImage(sourceImage)
-        SWSelection.stripImage(transparentImage, of: backgroundColor)
-        self.activeImage = omitBackground ? transparentImage : opaqueImage
+        if let originalCanvasImage {
+            self.originalCanvasImage = SWSelection.copyImage(originalCanvasImage)
+        } else {
+            self.originalCanvasImage = nil
+        }
+        self.opaqueImage = SWSelection.copyImage(opaqueImage)
+        self.transparentImage = SWSelection.copyImage(transparentImage)
+        self.activeImage = omitBackground ? self.transparentImage : self.opaqueImage
 
         super.init()
+    }
+
+    private convenience init(sourceImage: NSBitmapImageRep, baseRect: NSRect, originalCanvasImage: NSBitmapImageRep?, backgroundColor: NSColor, omitBackground: Bool) {
+        let opaqueImage = SWSelection.copyImage(sourceImage)
+        let transparentImage = SWSelection.copyImage(sourceImage)
+        SWSelection.stripImage(transparentImage, of: backgroundColor)
+        self.init(
+            baseRect: baseRect,
+            delta: .zero,
+            omitBackground: omitBackground,
+            transparentImage: transparentImage,
+            opaqueImage: opaqueImage,
+            originalCanvasImage: originalCanvasImage
+        )
     }
 
     @objc(initWithCanvasImage:rect:backgroundColor:omitBackground:)
@@ -62,6 +105,18 @@ public final class SWSelection: NSObject {
             originalCanvasImage: nil,
             backgroundColor: backgroundColor,
             omitBackground: omitBackground
+        )
+    }
+
+    @objc(initWithSelectionSnapshot:)
+    public convenience init(selectionSnapshot snapshot: SWSelectionSnapshot) {
+        self.init(
+            baseRect: snapshot.baseRect,
+            delta: snapshot.delta,
+            omitBackground: snapshot.omitBackground,
+            transparentImage: snapshot.transparentImage,
+            opaqueImage: snapshot.opaqueImage,
+            originalCanvasImage: snapshot.originalCanvasImage
         )
     }
 
@@ -100,6 +155,17 @@ public final class SWSelection: NSObject {
         return image.tiffRepresentation ?? Data()
     }
 
+    public func selectionSnapshot() -> SWSelectionSnapshot {
+        SWSelectionSnapshot(
+            baseRect: baseRect,
+            delta: delta,
+            omitBackground: omitBackground,
+            transparentImage: transparentImage,
+            opaqueImage: opaqueImage,
+            originalCanvasImage: originalCanvasImage
+        )
+    }
+
     public func clearSelectedImage() {
         activeImage = SWSelection.makeImage(size: activeImage.size)
     }
@@ -120,7 +186,7 @@ public final class SWSelection: NSObject {
         SWSelection.draw(originalCanvasImage, in: canvasImage, at: .zero, compositingOver: false)
     }
 
-    private static func makeImage(size: NSSize) -> NSBitmapImageRep {
+    fileprivate static func makeImage(size: NSSize) -> NSBitmapImageRep {
         let image = NSBitmapImageRep(
             bitmapDataPlanes: nil,
             pixelsWide: Int(size.width),
@@ -137,7 +203,7 @@ public final class SWSelection: NSObject {
         return image
     }
 
-    private static func copyImage(_ image: NSBitmapImageRep) -> NSBitmapImageRep {
+    fileprivate static func copyImage(_ image: NSBitmapImageRep) -> NSBitmapImageRep {
         cropImage(image, to: NSRect(origin: .zero, size: NSSize(width: image.pixelsWide, height: image.pixelsHigh)))
     }
 
